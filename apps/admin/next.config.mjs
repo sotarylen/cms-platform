@@ -10,6 +10,10 @@ const nextConfig = {
   webpack: (config) => {
     config.externals.push({
       'mysql2': 'commonjs mysql2',
+      'tls': 'commonjs tls',
+      'net': 'commonjs net',
+      'timers': 'commonjs timers',
+      'events': 'commonjs events'
     });
     
     return config;

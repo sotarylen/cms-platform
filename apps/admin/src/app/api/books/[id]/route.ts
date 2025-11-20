@@ -3,11 +3,10 @@ import { getPool } from '@/lib/db';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
-    const bookId = Number(id);
+    const bookId = Number(params.id);
     const body = await request.json();
 
     if (!bookId || isNaN(bookId)) {
@@ -43,10 +42,8 @@ export async function PATCH(
     }
 
     if (updates.length === 0) {
-      return NextResponse.json(
-        { message: '没有需要更新的字段' },
-        { status: 400 }
-      );
+      // 即使没有更新任何字段，也返回成功状态
+      return NextResponse.json({ success: true });
     }
 
     values.push(bookId);
@@ -63,4 +60,3 @@ export async function PATCH(
     );
   }
 }
-

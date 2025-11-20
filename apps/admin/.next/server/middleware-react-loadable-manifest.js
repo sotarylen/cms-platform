@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}"
+self.__REACT_LOADABLE_MANIFEST="{\"components/books-tabs-wrapper.tsx -> @/components/books-tabs\":{\"id\":\"components/books-tabs-wrapper.tsx -> @/components/books-tabs\",\"files\":[\"static/chunks/_app-pages-browser_src_components_books-tabs_tsx.js\"]}}"

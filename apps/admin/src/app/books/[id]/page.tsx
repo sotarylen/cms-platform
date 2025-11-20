@@ -12,24 +12,21 @@ import {
 } from '@/lib/queries';
 import { formatDate, formatNumber } from '@/lib/utils';
 import { CollapsibleSection } from '@/components/collapsible-section';
+import { BookEditButton } from '@/components/book-edit-button';
 
 type PageProps = {
   params: { id: string };
   searchParams?: Record<string, string | string[] | undefined>;
 };
 
-const normalizeParam = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value;
-
-export default async function BookDetail({
+export default async function Page({
   params,
   searchParams = {},
 }: PageProps) {
   const bookId = Number(params.id);
-  const pageParam = normalizeParam(searchParams.chapterPage);
+  const pageParam = Array.isArray(searchParams.chapterPage) ? searchParams.chapterPage[0] : searchParams.chapterPage;
   const chapterPage = pageParam ? Number(pageParam) : 1;
 
-  // 重新获取书籍信息，确保显示的是最新数据
   const [book, summary, chapters, stages, phases, scripts] = await Promise.all([
     getBookById(bookId),
     getBookSummary(bookId),
@@ -43,18 +40,23 @@ export default async function BookDetail({
     notFound();
   }
 
-  const coverSrc = book.cover ? book.cover : '/default-cover.svg';
+  const coverSrc = book.cover ?? '/default-cover.svg';
+  const chapterTotalPages = Math.max(1, Math.ceil(chapters.total / chapters.pageSize));
 
+  const hasSummaryContent = !!summary?.summary?.trim();
+  const hasPhasesContent = phases && phases.some(p => p.summary?.trim());
+  const hasStagesContent = stages && stages.some(s => s.summary?.trim());
+  const hasScriptsContent = scripts && scripts.some(sc => sc.title?.trim() || sc.keyPlot?.trim() || sc.range?.trim());
+
+  // 构建章节分页链接
   const buildChapterPageLink = (targetPage: number) => {
     const params = new URLSearchParams();
     Object.entries(searchParams).forEach(([key, value]) => {
-      if (key === 'chapterPage') {
-        return;
-      }
+      if (key === 'chapterPage') return;
       if (Array.isArray(value)) {
-        value.forEach((v) => params.append(key, v));
+        value.forEach(v => params.append(key, v));
       } else if (value != null) {
-        params.set(key, value as string);
+        params.set(key, value);
       }
     });
     params.set('chapterPage', String(targetPage));
@@ -65,11 +67,7 @@ export default async function BookDetail({
     };
   };
 
-  const chapterTotalPages = Math.max(
-    1,
-    Math.ceil(chapters.total / chapters.pageSize),
-  );
-
+  // 生成章节分页项
   const chapterPageItems = (() => {
     if (chapterTotalPages <= 7) {
       return Array.from({ length: chapterTotalPages }, (_, index) => ({
@@ -93,14 +91,12 @@ export default async function BookDetail({
     }
 
     const sorted = Array.from(pagesToInclude)
-      .filter((page) => page >= 1 && page <= chapterTotalPages)
+      .filter(page => page >= 1 && page <= chapterTotalPages)
       .sort((a, b) => a - b);
 
-    const items: Array<{ type: 'page'; value: number } | { type: 'ellipsis' }> =
-      [];
-
+    const items: Array<{ type: 'page'; value: number } | { type: 'ellipsis' }> = [];
     let previous = 0;
-    sorted.forEach((page) => {
+    sorted.forEach(page => {
       if (page - previous > 1) {
         items.push({ type: 'ellipsis' });
       }
@@ -111,21 +107,17 @@ export default async function BookDetail({
     return items;
   })();
 
-  // 检查是否有内容显示
-  const hasSummaryContent = !!summary && !!summary.summary && summary.summary.trim() !== '';
-  const hasPhasesContent = phases && phases.some((p) => p.summary && p.summary.trim() !== '');
-  const hasStagesContent = stages && stages.some((s) => s.summary && s.summary.trim() !== '');
-  const hasScriptsContent = scripts && scripts.some((sc) => (sc.title && sc.title.trim() !== '') || (sc.keyPlot && sc.keyPlot.trim() !== '') || (sc.range && sc.range.trim() !== ''));
-
   return (
     <>
       <div className="panel" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Link className="table-row-link" href="/">
           ← 返回首页
         </Link>
-        <Link className="table-row-link" href="/?status=all">
-          查看全部书籍
-        </Link>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <Link className="table-row-link" href="/?status=all">
+            查看全部书籍
+          </Link>
+        </div>
       </div>
       <section className="panel book-hero">
         <div className="book-hero-grid">
@@ -146,6 +138,9 @@ export default async function BookDetail({
               </span>
               <span className="pill">入库：{formatDate(book.createdAt)}</span>
             </div>
+            <div style={{ marginTop: '12px' }}>
+              <BookEditButton book={book} />
+            </div>
           </div>
           <div className="book-cover-panel">
             <Image
@@ -157,28 +152,6 @@ export default async function BookDetail({
               priority
               unoptimized
             />
-            <form
-              className="cover-upload-form"
-              action={`/books/${book.id}/cover`}
-              method="post"
-              encType="multipart/form-data"
-              style={{ display: 'flex', flexDirection: 'row', gap: 8 }}
-            >
-              <label className="cover-upload-button">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M17 8L12 3L7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <input type="file" name="cover" accept="image/*" required style={{ display: 'none' }} />
-              </label>
-              <button type="submit">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 5V19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </form>
           </div>
         </div>
       </section>
@@ -187,7 +160,7 @@ export default async function BookDetail({
         title="章节目录"
         subtitle={`共 ${formatNumber(
           chapters.total,
-        )} 条（源自 n8n_book_chapters_content），点击章节进入正文`}
+        )} 章，点击章节进入正文`}
         defaultOpen
       >
         {chapters.items.length ? (
@@ -204,7 +177,7 @@ export default async function BookDetail({
             </div>
             <div className="chapter-pagination">
               <Link
-                className="pagination-button"
+                className="page-link"
                 href={buildChapterPageLink(Math.max(1, chapterPage - 1))}
                 aria-disabled={chapterPage <= 1 ? 'true' : 'false'}
               >
@@ -218,7 +191,7 @@ export default async function BookDetail({
                 ) : (
                   <Link
                     key={item.value}
-                    className={`pagination-button${item.value === chapterPage ? ' pagination-button--current' : ''}`}
+                    className={`page-link${item.value === chapterPage ? ' page-link--current' : ''}`}
                     href={buildChapterPageLink(item.value)}
                   >
                     {item.value}
@@ -226,7 +199,7 @@ export default async function BookDetail({
                 ),
               )}
               <Link
-                className="pagination-button"
+                className="page-link"
                 href={buildChapterPageLink(
                   Math.min(chapterTotalPages, chapterPage + 1),
                 )}
