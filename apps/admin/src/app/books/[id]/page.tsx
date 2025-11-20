@@ -30,15 +30,8 @@ export default async function BookDetail({
   const chapterPage = pageParam ? Number(pageParam) : 1;
 
   // 重新获取书籍信息，确保显示的是最新数据
-  const refreshBook = async () => {
-    const [book] = await Promise.all([
-      getBookById(bookId),
-    ]);
-    return book;
-  };
-
   const [book, summary, chapters, stages, phases, scripts] = await Promise.all([
-    refreshBook(),
+    getBookById(bookId),
     getBookSummary(bookId),
     getChapters({ bookId, page: chapterPage }),
     getPlotStages(bookId),
@@ -49,11 +42,6 @@ export default async function BookDetail({
   if (!book) {
     notFound();
   }
-
-  const hasSummaryContent = !!summary && !!summary.summary && summary.summary.trim() !== '';
-  const hasPhasesContent = phases && phases.some((p) => p.summary && p.summary.trim() !== '');
-  const hasStagesContent = stages && stages.some((s) => s.summary && s.summary.trim() !== '');
-  const hasScriptsContent = scripts && scripts.some((sc) => (sc.title && sc.title.trim() !== '') || (sc.keyPlot && sc.keyPlot.trim() !== '') || (sc.range && sc.range.trim() !== ''));
 
   const coverSrc = book.cover ? book.cover : '/default-cover.svg';
 
@@ -66,14 +54,14 @@ export default async function BookDetail({
       if (Array.isArray(value)) {
         value.forEach((v) => params.append(key, v));
       } else if (value != null) {
-        params.set(key, value);
+        params.set(key, value as string);
       }
     });
     params.set('chapterPage', String(targetPage));
     const qs = params.toString();
     return {
       pathname: `/books/${bookId}`,
-      query: Object.fromEntries(params.entries())
+      search: qs ? `?${qs}` : ''
     };
   };
 
@@ -125,14 +113,9 @@ export default async function BookDetail({
 
   // 检查是否有内容显示
   const hasSummaryContent = !!summary && !!summary.summary && summary.summary.trim() !== '';
-  const hasPhasesContent = phases.some((phase) => phase.summary && phase.summary.trim() !== '');
-  const hasStagesContent = stages.some((stage) => stage.summary && stage.summary.trim() !== '');
-  const hasScriptsContent = scripts.length > 0;
-
-  const handleFetchClick = async () => {
-    'use server';
-    await import('@/components/book-fetch-button').then(m => m.BookFetchButton(bookId));
-  };
+  const hasPhasesContent = phases && phases.some((p) => p.summary && p.summary.trim() !== '');
+  const hasStagesContent = stages && stages.some((s) => s.summary && s.summary.trim() !== '');
+  const hasScriptsContent = scripts && scripts.some((sc) => (sc.title && sc.title.trim() !== '') || (sc.keyPlot && sc.keyPlot.trim() !== '') || (sc.range && sc.range.trim() !== ''));
 
   return (
     <>
@@ -212,8 +195,8 @@ export default async function BookDetail({
             <div className="chapter-grid">
               {chapters.items.map((chapter) => (
                 <article key={chapter.id} className="chapter-card">
-                  <small>第 {chapter.sortOrder ?? '—'} 章</small>
-                  <Link href={`/books/${book.id}/chapters/${chapter.id}`}>
+                  <div className="chapter-card-order">第 {chapter.sortOrder ?? '—'} 章</div>
+                  <Link href={`/books/${book.id}/chapters/${chapter.id}`} className="chapter-card-title">
                     {chapter.title}
                   </Link>
                 </article>
@@ -221,36 +204,35 @@ export default async function BookDetail({
             </div>
             <div className="chapter-pagination">
               <Link
-                className="page-link"
+                className="pagination-button"
                 href={buildChapterPageLink(Math.max(1, chapterPage - 1))}
-                aria-disabled={chapterPage <= 1}
+                aria-disabled={chapterPage <= 1 ? 'true' : 'false'}
               >
-                «
+                ←
               </Link>
               {chapterPageItems.map((item, index) =>
                 item.type === 'ellipsis' ? (
-                  <span key={`ellipsis-${index}`} className="page-link" aria-disabled="true">
+                  <span key={`ellipsis-${index}`} className="pagination-ellipsis" aria-disabled="true">
                     …
                   </span>
                 ) : (
                   <Link
                     key={item.value}
-                    className="page-link"
+                    className={`pagination-button${item.value === chapterPage ? ' pagination-button--current' : ''}`}
                     href={buildChapterPageLink(item.value)}
-                    data-active={item.value === chapterPage}
                   >
                     {item.value}
                   </Link>
                 ),
               )}
               <Link
-                className="page-link"
+                className="pagination-button"
                 href={buildChapterPageLink(
                   Math.min(chapterTotalPages, chapterPage + 1),
                 )}
-                aria-disabled={chapterPage >= chapterTotalPages}
+                aria-disabled={chapterPage >= chapterTotalPages ? 'true' : 'false'}
               >
-                »
+                →
               </Link>
             </div>
           </>
