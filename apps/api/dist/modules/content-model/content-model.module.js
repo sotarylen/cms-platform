@@ -1,0 +1,24 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ContentModelModule = void 0;
+const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
+const content_model_entity_js_1 = require("./content-model.entity.js");
+const content_model_resolver_js_1 = require("./content-model.resolver.js");
+const content_model_service_js_1 = require("./content-model.service.js");
+let ContentModelModule = class ContentModelModule {
+};
+exports.ContentModelModule = ContentModelModule;
+exports.ContentModelModule = ContentModelModule = __decorate([
+    (0, common_1.Module)({
+        imports: [typeorm_1.TypeOrmModule.forFeature([content_model_entity_js_1.ContentModelEntity])],
+        providers: [content_model_resolver_js_1.ContentModelResolver, content_model_service_js_1.ContentModelService],
+        exports: [content_model_service_js_1.ContentModelService],
+    })
+], ContentModelModule);
