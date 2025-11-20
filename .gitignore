@@ -1,4 +1,4 @@
 node_modules/ # 把依赖、日志、env 都忽略
 *.log
 .env
-.next/
+node_modules
