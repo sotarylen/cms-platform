@@ -1,0 +1,27 @@
+{
+  "name": "cms-platform",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.10.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "concurrently -r \"pnpm --filter api dev\" \"pnpm --filter admin dev\"",
+    "dev:api": "pnpm --filter api dev",
+    "dev:admin": "pnpm --filter admin dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "biome check --apply .",
+    "migrate": "pnpm --filter api db:migrate",
+    "seed": "pnpm --filter api db:seed"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.2",
+    "concurrently": "^8.2.2",
+    "turbo": "^2.2.3",
+    "typescript": "^5.6.3"
+  }
+}
