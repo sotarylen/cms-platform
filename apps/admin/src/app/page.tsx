@@ -34,7 +34,7 @@ const renderBooksTable = (data: BookListResponse) => {
             <th>书名</th>
             <th>作者</th>
             <th>来源</th>
-            <th>最新章节</th>
+            {/* <th>最新章节</th> */}
             <th>章节数</th>
             <th>状态</th>
             <th>操作</th>
@@ -54,7 +54,7 @@ const renderBooksTable = (data: BookListResponse) => {
               </td>
               <td>{book.author ?? '未知'}</td>
               <td>{book.source ?? '—'}</td>
-              <td>{book.latestChapter ?? '—'}</td>
+              {/* <td>{book.latestChapter ?? '—'}</td> */}
               <td>{formatNumber(book.chapterCount)}</td>
               <td>
                 <StatusPill status={book.status} />
@@ -134,7 +134,7 @@ export default async function Home({ searchParams }: any) {
         </div>
       </section>
 
-      <section className="panel">
+      {/* <section className="panel">
         <h2>当前最新入库的章节</h2>
         {latestChapters.length === 0 ? (
           <p className="muted">暂无最近入库章节。</p>
@@ -173,7 +173,7 @@ export default async function Home({ searchParams }: any) {
             </tbody>
           </table>
         )}
-      </section>
+      </section> */}
 
       <section className="panel">
         <BookSearchForm query={query} source={source} minChapters={minChaptersParam ?? ''} />

@@ -393,8 +393,8 @@ body {
 .pill-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0 0;
+  gap: 1rem;
+  margin: 1rem 0 0;
 }
 
 .pill {
@@ -826,7 +826,7 @@ body {
 }
 .book-action-toolbar {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   margin: 1rem 0
 }
 
