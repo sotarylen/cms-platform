@@ -349,6 +349,7 @@ body {
   font-weight: 500;
 }
 
+/* 书籍处理状态标记 */
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -372,6 +373,8 @@ body {
   border-color: rgba(251, 113, 133, 0.3);
   color: var(--danger);
 }
+
+
 
 .pagination {
   display: flex;
@@ -479,6 +482,12 @@ body {
 .chapter-pagination .page-link[data-active='true'] {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.chapter-pagination .page-link--current {
+  border-color: var(--accent);
+  color: var(--accent);
+  background-color: rgba(59, 130, 246, 0.1);
 }
 
 .chapter-pagination .page-link[aria-disabled='true'] {
@@ -807,6 +816,18 @@ body {
 .modal-save:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.book-intro {
+  white-space: pre-wrap;
+  line-height: 1.8;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+}
+.book-action-toolbar {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0
 }
 
 @media (max-width: 768px) {
