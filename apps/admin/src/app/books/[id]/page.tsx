@@ -13,6 +13,9 @@ import {
 import { formatDate, formatNumber } from '@/lib/utils';
 import { CollapsibleSection } from '@/components/collapsible-section';
 import { BookEditButton } from '@/components/book-edit-button';
+import dynamic from 'next/dynamic';
+
+const BookFetchButton = dynamic(() => import('@/components/book-fetch-button'));
 
 type PageProps = {
   params: { id: string };
@@ -123,14 +126,9 @@ export default async function Page({
         <div className="book-hero-grid">
           <div>
             <h2 className="book-title">{book.name}</h2>
-            <p className="muted">
-              作者：{book.author ?? '未知'} · 来源：{book.source ?? '—'}
-            </p>
-            <div style={{ margin: '12px 0' }}>
-              <StatusPill status={book.status} />
-            </div>
-            <p>{book.introduce ?? '暂无简介'}</p>
             <div className="pill-list">
+              <span className='pill'>作者：{book.author ?? '未知'}</span>
+              <span className="pill">来源：{book.source ?? '—'}</span>
               <span className="pill">分类：{book.category ?? '未分类'}</span>
               <span className="pill">章节：{formatNumber(book.chapterCount)}</span>
               <span className="pill">
@@ -138,8 +136,15 @@ export default async function Page({
               </span>
               <span className="pill">入库：{formatDate(book.createdAt)}</span>
             </div>
-            <div style={{ marginTop: '12px' }}>
+            
+            <p className='book-intro'>{book.introduce ?? '暂无简介'}</p>
+            <div className='book-action-toolbar'>
+              <StatusPill status={book.status} />
               <BookEditButton book={book} />
+              <BookFetchButton 
+                  bookId={book.id} 
+                  status={book.status}
+                />
             </div>
           </div>
           <div className="book-cover-panel">
