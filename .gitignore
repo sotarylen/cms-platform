@@ -1,5 +1,6 @@
 node_modules/ # 把依赖、日志、env 都忽略
 *.log
+.DS_Store
 .env
 node_modules
 apps/admin/.next/
