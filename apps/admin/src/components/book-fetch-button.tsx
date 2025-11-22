@@ -33,12 +33,16 @@ const BookFetchButton: React.FC<BookFetchButtonProps> = ({
     setSuccess(null);
     
     try {
+      // 判断是否为重新抓取
+      const isRefetch = status === 1;
+      
       // 触发抓取任务
       const response = await fetch(`/api/books/${bookId}/fetch`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ isRefetch }),
       });
 
       const result = await response.json();

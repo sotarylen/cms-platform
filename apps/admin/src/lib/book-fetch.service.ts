@@ -16,6 +16,9 @@ export async function triggerChapterFetch(bookId: number, isRefetch: boolean = f
     
     // 2. 将n8n_book_chapters_content中对应的book_id的所有章节内容删除
     await query('DELETE FROM n8n_book_chapters_content WHERE book_id = ?', [bookId]);
+    
+    // 添加延迟确保数据库操作完成
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 
   // 获取书籍来源以确定对应的n8n工作流
@@ -35,10 +38,10 @@ export async function triggerChapterFetch(bookId: number, isRefetch: boolean = f
   console.log(`Book source: "${source}"`);
 
   // 添加环境变量调试信息
-  console.log('Available environment variables:');
-  console.log('N8N_CHAPTER_FETCH_WEBHOOK_URL:', process.env.N8N_CHAPTER_FETCH_WEBHOOK_URL);
-  console.log('N8N_CHAPTER_FETCH_WEBHOOK_URL_XCHINA:', process.env.N8N_CHAPTER_FETCH_WEBHOOK_URL_XCHINA);
-  console.log('N8N_CHAPTER_FETCH_WEBHOOK_URL_BOOK18:', process.env.N8N_CHAPTER_FETCH_WEBHOOK_URL_BOOK18);
+  // console.log('Available environment variables:');
+  // console.log('N8N_CHAPTER_FETCH_WEBHOOK_URL:', process.env.N8N_CHAPTER_FETCH_WEBHOOK_URL);
+  // console.log('N8N_CHAPTER_FETCH_WEBHOOK_URL_XCHINA:', process.env.N8N_CHAPTER_FETCH_WEBHOOK_URL_XCHINA);
+  // console.log('N8N_CHAPTER_FETCH_WEBHOOK_URL_BOOK18:', process.env.N8N_CHAPTER_FETCH_WEBHOOK_URL_BOOK18);
 
   // 使用 if-else 替代 switch 语句以更好地处理空字符串情况
   if (source === 'xChina') {
@@ -82,5 +85,7 @@ export async function triggerChapterFetch(bookId: number, isRefetch: boolean = f
     throw new Error('Failed to start the chapter fetch process.');
   }
 
+  // 更新书籍处理状态为已处理(1)
+  await query('UPDATE n8n_book_list SET book_process_status = 1 WHERE id = ?', [bookId]);
   console.log(`Successfully triggered n8n workflow for book ${bookId}.`);
 }
