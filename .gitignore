@@ -4,3 +4,5 @@ node_modules/ # 把依赖、日志、env 都忽略
 .env
 node_modules
 apps/admin/.next/
+.pnpm-store
+
