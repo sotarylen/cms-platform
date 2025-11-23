@@ -1,0 +1,11 @@
+node_modules
+.next
+apps/admin/.next
+dist
+.git
+.gitignore
+.dockerignore
+Dockerfile
+npm-debug.log
+yarn-error.log
+# 根据您的项目需要添加其他忽略项，例如日志文件、测试文件等

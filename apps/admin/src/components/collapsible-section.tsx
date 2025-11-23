@@ -33,7 +33,7 @@ export function CollapsibleSection({
             {subtitle && <p className="muted">{subtitle}</p>}
           </div>
           <span className="chevron" data-open={open}>
-            ▾
+            <i className={`fas fa-chevron-${open ? 'up' : 'down'}`}></i>
           </span>
         </button>
         {actions && <div className="collapsible-actions">{actions}</div>}
@@ -42,4 +42,3 @@ export function CollapsibleSection({
     </section>
   );
 }
-

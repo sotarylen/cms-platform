@@ -12,8 +12,9 @@ import { ChapterContentViewer } from '@/components/chapter-content-viewer';
 
 export default async function ChapterDetail(props: any) {
   const { params } = props;
-  const bookId = Number(params.id);
-  const chapterId = Number(params.chapterId);
+  const resolvedParams = await params;
+  const bookId = Number(resolvedParams.id);
+  const chapterId = Number(resolvedParams.chapterId);
 
   const [book, chapter, navigation] = await Promise.all([
     getBookById(bookId),
@@ -36,7 +37,7 @@ export default async function ChapterDetail(props: any) {
   }
 
   const renderNav = (position: 'top' | 'bottom') => (
-    <div className="chapter-nav" aria-label={`章节导航-${position}`}>
+    <div className="chapter-nav" aria-label="章节导航" style={{ marginBottom: 24 }}>
       <div className="chapter-nav-slot">
         {navigation.prev ? (
           <Link
@@ -83,93 +84,18 @@ export default async function ChapterDetail(props: any) {
           <p className="app-subtitle">正在阅读：{chapter.title}</p>
         </div>
       </header>
-      <section className="panel" style={{ marginTop: 8 }}>
-        <h2 style={{ marginBottom: 4 }}>{chapter.title}</h2>
-        <p className="muted">
-          排序：{chapter.sortOrder ?? '—'} · 入库时间：
-          {formatDate(chapter.createdAt)}
-        </p>
-        {chapter.summary && (
-          <>
-            <h3>章节摘要</h3>
-            <p
-              style={{
-                whiteSpace: 'pre-line',
-                color: 'var(--text-muted)',
-              }}
-            >
-              {chapter.summary}
-            </p>
-          </>
-        )}
-      </section>
       <section className="panel" style={{ marginTop: 16 }}>
         {renderNav('top')}
-        <ChapterContentViewer content={chapter.content} />
+        <ChapterContentViewer 
+          content={chapter.content}
+          prevChapterHref={navigation.prev ? `/books/${book.id}/chapters/${navigation.prev.id}` : undefined}
+          nextChapterHref={navigation.next ? `/books/${book.id}/chapters/${navigation.next.id}` : undefined}
+          bookHref={`/books/${book.id}`}
+          prevChapterTitle={navigation.prev?.title}
+          nextChapterTitle={navigation.next?.title}
+        />
         {renderNav('bottom')}
       </section>
-
-      {/* 仅在有数据时显示以下书籍级 Block */}
-      {hasPhasesContent && (
-        <section className="panel">
-          <h3>阶段性摘要</h3>
-          <div className="timeline">
-            {phases
-              .filter((phase) => phase.summary && phase.summary.trim() !== '')
-              .map((phase) => (
-                <article key={phase.id} className="timeline-item">
-                  <small>
-                    第 {phase.startSort} - {phase.endSort} 章
-                  </small>
-                  <p style={{ marginTop: 6, whiteSpace: 'pre-line' }}>
-                    {phase.summary}
-                  </p>
-                </article>
-              ))}
-          </div>
-        </section>
-      )}
-      {hasStagesContent && (
-        <section className="panel">
-          <h3>剧情阶段 / 战斗节奏</h3>
-          <div className="timeline">
-            {stages
-              .filter((stage) => stage.summary && stage.summary.trim() !== '')
-              .map((stage) => (
-                <article key={stage.id} className="timeline-item">
-                  <small>
-                    阶段 {stage.stageNumber} · 第 {stage.startEpisode}-{stage.endEpisode} 集
-                  </small>
-                  <h4 style={{ margin: '6px 0 4px' }}>{stage.stageName}</h4>
-                  <p style={{ whiteSpace: 'pre-line', margin: '0 0 8px' }}>
-                    {stage.summary}
-                  </p>
-                </article>
-              ))}
-          </div>
-        </section>
-      )}
-      {hasStagesContent && (
-        <section className="panel">
-          <h3>剧情阶段 / 战斗节奏</h3>
-          <div className="timeline">
-            {stages
-              .filter((stage) => stage.summary && stage.summary.trim() !== '')
-              .map((stage) => (
-                <article key={stage.id} className="timeline-item">
-                  <small>
-                    阶段 {stage.stageNumber} · 第 {stage.startEpisode}-{stage.endEpisode} 集
-                  </small>
-                  <h4 style={{ margin: '6px 0 4px' }}>{stage.stageName}</h4>
-                  <p style={{ whiteSpace: 'pre-line', margin: '0 0 8px' }}>
-                    {stage.summary}
-                  </p>
-                </article>
-              ))}
-          </div>
-        </section>
-      )}
     </>
   );
 }
-

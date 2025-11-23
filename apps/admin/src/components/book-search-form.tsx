@@ -31,8 +31,10 @@ export function BookSearchForm({
         defaultValue={minChapters}
       />
       {/* 状态筛选已移除 — 使用最小章节数过滤代替 */}
-      <button type="submit">应用筛选</button>
+      <button type="submit">
+        <i className="fas fa-filter"></i>
+        应用筛选
+      </button>
     </form>
   );
 }
-

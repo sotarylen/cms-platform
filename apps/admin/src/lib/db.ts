@@ -15,7 +15,7 @@ const getEnv = (key: string, fallback?: string): string => {
 
 const buildPool = () =>
   mysql.createPool({
-    host: getEnv('N8N_DB_HOST', '127.0.0.1'),
+    host: getEnv('N8N_DB_HOST', 'mariadb'),
     port: Number(getEnv('N8N_DB_PORT', '3306')),
     user: getEnv('N8N_DB_USER', 'root'),
     password: getEnv('N8N_DB_PASS', 'rainmanlen'),

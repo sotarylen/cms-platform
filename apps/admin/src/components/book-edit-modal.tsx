@@ -144,6 +144,7 @@ export function BookEditModal({ book, onClose }: BookEditModalProps) {
               onClick={onClose}
               disabled={isSubmitting}
             >
+              <i className="fas fa-times"></i>
               取消
             </button>
             <button
@@ -152,7 +153,12 @@ export function BookEditModal({ book, onClose }: BookEditModalProps) {
               className="modal-save"
               disabled={isSubmitting}
             >
-              {isSubmitting ? '保存中...' : '保存'}
+              {isSubmitting ? '保存中...' : (
+                <>
+                  <i className="fas fa-save"></i>
+                  保存
+                </>
+              )}
             </button>
           </div>
         </div>

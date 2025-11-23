@@ -16,9 +16,6 @@ export async function triggerChapterFetch(bookId: number, isRefetch: boolean = f
     
     // 2. 将n8n_book_chapters_content中对应的book_id的所有章节内容删除
     await query('DELETE FROM n8n_book_chapters_content WHERE book_id = ?', [bookId]);
-    
-    // 添加延迟确保数据库操作完成
-    await new Promise(resolve => setTimeout(resolve, 100));
   }
 
   // 获取书籍来源以确定对应的n8n工作流
