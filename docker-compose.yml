@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  app:
+    # 使用 gplane/pnpm 镜像
+    # 标签可以是 latest，或者具体的 node 版本，例如 gplane/pnpm:8-alpine (对应 Node v20)
+    image: gplane/pnpm:latest 
+
+    # 将当前本地目录挂载到容器的 /app 目录
+    volumes:
+      - .:/app 
+      - node_modules_volume:/app/node_modules
+      # 可选：将 pnpm 存储缓存挂载到本地目录，以实现跨容器构建缓存加速
+      - pnpm_store:/usr/local/share/pnpm/store
+
+    # 设置容器的启动目录为 /app
+    working_dir: /app
+
+    # 映射端口：本地端口:容器端口
+    # 请根据您的应用实际监听的端口修改（例如 3000、8080 等）
+    ports:
+      - "3001:3001"
+
+    command: sh -c "pnpm install && pnpm dev" 
+
+    # 重启策略（可选）
+    restart: unless-stopped
+
+    environment:
+      # 在这里定义数据库连接信息，供您的应用代码使用
+      N8N_DB_HOST: mariadb
+      N8N_DB_USER: root
+      N8N_DB_PASS: rainmanlen
+      N8N_DB_NAME: n8n
+      N8N_DB_PORT: 3306
+
+    networks:
+      - lnmp_default
+
+
+# 定义卷，用于持久化 pnpm 缓存
+volumes:
+  pnpm_store:
+  node_modules_volume:
+
+# 声明使用的外部网络
+networks:
+  lnmp_default:
+    external: true
