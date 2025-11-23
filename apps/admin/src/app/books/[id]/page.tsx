@@ -16,6 +16,7 @@ import { BookEditButton } from '@/components/book-edit-button';
 import dynamic from 'next/dynamic';
 
 const BookFetchButton = dynamic(() => import('@/components/book-fetch-button'));
+const BookChaptersSection = dynamic(() => import('@/components/book-chapters-section'));
 
 type PageProps = {
   params: { id: string };
@@ -26,8 +27,10 @@ export default async function Page({
   params,
   searchParams = {},
 }: PageProps) {
-  const bookId = Number(params.id);
-  const pageParam = Array.isArray(searchParams.chapterPage) ? searchParams.chapterPage[0] : searchParams.chapterPage;
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  const bookId = Number(resolvedParams.id);
+  const pageParam = Array.isArray(resolvedSearchParams.chapterPage) ? resolvedSearchParams.chapterPage[0] : resolvedSearchParams.chapterPage;
   const chapterPage = pageParam ? Number(pageParam) : 1;
 
   const [book, summary, chapters, stages, phases, scripts] = await Promise.all([
@@ -114,11 +117,11 @@ export default async function Page({
     <>
       <div className="panel" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Link className="table-row-link" href="/">
-          ← 返回首页
+          <i className="fas fa-home"></i> 返回首页
         </Link>
         <div style={{ display: 'flex', gap: '12px' }}>
           <Link className="table-row-link" href="/?status=all">
-            查看全部书籍
+            <i className="fas fa-book"></i> 查看全部书籍
           </Link>
         </div>
       </div>
@@ -161,64 +164,8 @@ export default async function Page({
         </div>
       </section>
 
-      <CollapsibleSection
-        title="章节目录"
-        subtitle={`共 ${formatNumber(
-          chapters.total,
-        )} 章，点击章节进入正文`}
-        defaultOpen
-      >
-        {chapters.items.length ? (
-          <>
-            <div className="chapter-grid">
-              {chapters.items.map((chapter) => (
-                <article key={chapter.id} className="chapter-card">
-                  <div className="chapter-card-order">第 {chapter.sortOrder ?? '—'} 章</div>
-                  <Link href={`/books/${book.id}/chapters/${chapter.id}`} className="chapter-card-title">
-                    {chapter.title}
-                  </Link>
-                </article>
-              ))}
-            </div>
-            <div className="chapter-pagination">
-              <Link
-                className="page-link"
-                href={buildChapterPageLink(Math.max(1, chapterPage - 1))}
-                aria-disabled={chapterPage <= 1 ? 'true' : 'false'}
-              >
-                ←
-              </Link>
-              {chapterPageItems.map((item, index) =>
-                item.type === 'ellipsis' ? (
-                  <span key={`ellipsis-${index}`} className="pagination-ellipsis" aria-disabled="true">
-                    …
-                  </span>
-                ) : (
-                  <Link
-                    key={item.value}
-                    className={`page-link${item.value === chapterPage ? ' page-link--current' : ''}`}
-                    href={buildChapterPageLink(item.value)}
-                  >
-                    {item.value}
-                  </Link>
-                ),
-              )}
-              <Link
-                className="page-link"
-                href={buildChapterPageLink(
-                  Math.min(chapterTotalPages, chapterPage + 1),
-                )}
-                aria-disabled={chapterPage >= chapterTotalPages ? 'true' : 'false'}
-              >
-                →
-              </Link>
-            </div>
-          </>
-        ) : (
-          <p className="muted">暂无章节列表。</p>
-        )}
-      </CollapsibleSection>
-
+      <BookChaptersSection bookId={bookId} initialChapters={chapters} />
+      
       {hasSummaryContent && (
         <CollapsibleSection
           title="整书摘要"

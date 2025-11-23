@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { BookSearchForm } from '@/components/book-search-form';
 import { PaginationControls } from '@/components/pagination-controls';
 import { StatusPill } from '@/components/status-pill';
 import TriggerButton from '@/components/trigger-button';
@@ -176,7 +175,7 @@ export default async function Home({ searchParams }: any) {
       </section> */}
 
       <section className="panel">
-        <BookSearchForm query={query} source={source} minChapters={minChaptersParam ?? ''} />
+        {/* BookSearchForm query={query} source={source} minChapters={minChaptersParam ?? ''} */ }
         {/* Client-side Tabs component - handles tab UI and partial fetch */}
         <div style={{ marginTop: 12 }}>
           {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}

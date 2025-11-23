@@ -60,10 +60,13 @@ export function PaginationControls({
   searchParams = {},
   pageParam = 'page',
 }: Props) {
+  // 将searchParams转换为普通对象，避免直接使用awaited对象
+  const resolvedSearchParams = { ...searchParams };
+  
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const buildLink = (targetPage: number) => {
     const params = new URLSearchParams();
-    Object.entries(searchParams).forEach(([key, value]) => {
+    Object.entries(resolvedSearchParams).forEach(([key, value]) => {
       if (key === pageParam) {
         return;
       }
@@ -87,7 +90,7 @@ export function PaginationControls({
         href={buildLink(Math.max(1, page - 1)) as any}
         aria-disabled={page <= 1}
       >
-        «
+        <i className="fas fa-chevron-left"></i>
       </Link>
       {pageItems.map((item, index) =>
         item.type === 'ellipsis' ? (
@@ -110,7 +113,7 @@ export function PaginationControls({
         href={buildLink(Math.min(totalPages, page + 1)) as any}
         aria-disabled={page >= totalPages}
       >
-        »
+        <i className="fas fa-chevron-right"></i>
       </Link>
     </div>
   );
