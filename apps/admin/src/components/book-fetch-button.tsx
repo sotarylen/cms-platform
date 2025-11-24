@@ -18,6 +18,19 @@ const BookFetchButton: React.FC<BookFetchButtonProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<{
+    requestId: string | null;
+    startTime: number | null;
+    endTime: number | null;
+    responseStatus: number | null;
+    responseData: any;
+  }>({
+    requestId: null,
+    startTime: null,
+    endTime: null,
+    responseStatus: null,
+    responseData: null
+  });
 
   // 根据书籍状态确定按钮文本
   const getButtonText = () => {
@@ -28,6 +41,25 @@ const BookFetchButton: React.FC<BookFetchButtonProps> = ({
   };
 
   const handleClick = async () => {
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // 更新调试信息
+    setDebugInfo(prev => ({
+      ...prev,
+      requestId,
+      startTime: Date.now(),
+      endTime: null,
+      responseStatus: null,
+      responseData: null
+    }));
+
+    console.log(`[BookFetchButton] 开始抓取书籍 ${bookId}`, {
+      requestId,
+      timestamp: new Date().toISOString(),
+      bookId,
+      isRefetch: status === 1
+    });
+
     setIsLoading(true);
     setError(null);
     setSuccess(null);
@@ -39,9 +71,24 @@ const BookFetchButton: React.FC<BookFetchButtonProps> = ({
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ isRefetch: status === 1 })
       });
 
       const result = await response.json();
+      
+      // 更新调试信息
+      setDebugInfo(prev => ({
+        ...prev,
+        responseStatus: response.status,
+        responseData: result
+      }));
+
+      console.log(`[BookFetchButton] 收到响应`, {
+        requestId,
+        status: response.status,
+        responseTime: `${Date.now() - (debugInfo.startTime || Date.now())}ms`,
+        response: result
+      });
       
       if (!response.ok) {
         throw new Error(result.message || '抓取失败');
@@ -61,9 +108,22 @@ const BookFetchButton: React.FC<BookFetchButtonProps> = ({
         window.location.reload();
       }
     } catch (err: any) {
-      setError(err.message || '发生未知错误');
+      const errorMessage = err.message || '发生未知错误';
+      setError(errorMessage);
       console.error('抓取章节失败:', err);
     } finally {
+      // 更新结束时间
+      setDebugInfo(prev => ({
+        ...prev,
+        endTime: Date.now()
+      }));
+      
+      console.log(`[BookFetchButton] 操作完成`, {
+        requestId: debugInfo.requestId,
+        duration: `${(debugInfo.endTime || Date.now()) - (debugInfo.startTime || Date.now())}ms`,
+        finalStatus: error ? 'error' : 'success'
+      });
+      
       setIsLoading(false);
     }
   };

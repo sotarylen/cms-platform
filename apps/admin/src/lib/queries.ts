@@ -439,3 +439,44 @@ export const updateBookCover = async (bookId: number, coverUrl: string) => {
   ]);
 };
 
+export const getPreviousBook = async (bookId: number) => {
+  const rows = await query<any[]>(
+    `
+    SELECT id, book_name
+    FROM n8n_book_list
+    WHERE id < ?
+    ORDER BY id DESC
+    LIMIT 1
+    `,
+    [bookId],
+  );
+  
+  const row = rows[0];
+  if (!row) return null;
+  
+  return {
+    id: row.id,
+    name: row.book_name,
+  };
+};
+
+export const getNextBook = async (bookId: number) => {
+  const rows = await query<any[]>(
+    `
+    SELECT id, book_name
+    FROM n8n_book_list
+    WHERE id > ?
+    ORDER BY id ASC
+    LIMIT 1
+    `,
+    [bookId],
+  );
+  
+  const row = rows[0];
+  if (!row) return null;
+  
+  return {
+    id: row.id,
+    name: row.book_name,
+  };
+};

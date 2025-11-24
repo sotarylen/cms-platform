@@ -9,6 +9,8 @@ import {
   getPhasedSummaries,
   getPlotStages,
   getScriptEpisodes,
+  getPreviousBook,
+  getNextBook
 } from '@/lib/queries';
 import { formatDate, formatNumber } from '@/lib/utils';
 import { CollapsibleSection } from '@/components/collapsible-section';
@@ -33,13 +35,15 @@ export default async function Page({
   const pageParam = Array.isArray(resolvedSearchParams.chapterPage) ? resolvedSearchParams.chapterPage[0] : resolvedSearchParams.chapterPage;
   const chapterPage = pageParam ? Number(pageParam) : 1;
 
-  const [book, summary, chapters, stages, phases, scripts] = await Promise.all([
+  const [book, summary, chapters, stages, phases, scripts, prevBook, nextBook] = await Promise.all([
     getBookById(bookId),
     getBookSummary(bookId),
     getChapters({ bookId, page: chapterPage }),
     getPlotStages(bookId),
     getPhasedSummaries(bookId),
     getScriptEpisodes(bookId),
+    getPreviousBook(bookId),
+    getNextBook(bookId)
   ]);
 
   if (!book) {
@@ -116,13 +120,31 @@ export default async function Page({
   return (
     <>
       <div className="panel" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link className="table-row-link" href="/">
+        <Link className="action-button" href="/">
           <i className="fas fa-home"></i> 返回首页
         </Link>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <Link className="table-row-link" href="/?status=all">
-            <i className="fas fa-book"></i> 查看全部书籍
+          {prevBook ? (
+            <Link className="action-button" href={`/books/${prevBook.id}`}>
+              <i className="fas fa-arrow-left"></i> 上一本
+            </Link>
+          ) : (
+            <button className="action-button" disabled>
+              <i className="fas fa-arrow-left"></i> 上一本
+            </button>
+          )}
+          <Link className="action-button" href="/?status=all">
+            <i className="fas fa-book"></i> 所有书籍
           </Link>
+          {nextBook ? (
+            <Link className="action-button" href={`/books/${nextBook.id}`}>
+              下一本 <i className="fas fa-arrow-right"></i>
+            </Link>
+          ) : (
+            <button className="action-button" disabled>
+              下一本 <i className="fas fa-arrow-right"></i>
+            </button>
+          )}
         </div>
       </div>
       <section className="panel book-hero">
