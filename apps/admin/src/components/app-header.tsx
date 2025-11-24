@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
 
@@ -19,14 +20,35 @@ export function AppHeader() {
         'app-header--compact': !isHome,
       })}
     >
-      <div>
-        <p className="app-eyebrow">n8n Novel Database</p>
-        <h1>{isHome ? 'NOVEL' : 'NOVEL DETIAL'}</h1>
-        <p className="app-subtitle">
-          Search, Preview, and Adapt Scripts for Novels
-        </p>
+      <div className="header-content">
+        <h1 className="logo">
+          <Link href="/">CMS 管理平台</Link>
+        </h1>
+        <nav className="main-nav">
+          <ul>
+            <li>
+              <Link href="/books" className={pathname === '/books' ? 'active' : ''}>
+                书籍管理
+              </Link>
+            </li>
+            <li>
+              <Link href="/users" className={pathname === '/users' ? 'active' : ''}>
+                用户管理
+              </Link>
+            </li>
+            <li>
+              <Link href="/sources" className={pathname === '/sources' ? 'active' : ''}>
+                来源管理
+              </Link>
+            </li>
+            <li>
+              <Link href="/n8n" className={pathname === '/n8n' ? 'active' : ''}>
+                n8n接口
+              </Link>
+            </li>
+          </ul>
+        </nav>
       </div>
-      <div className="app-badge">{isHome ? 'Beta' : 'Beta'}</div>
     </header>
   );
 }
