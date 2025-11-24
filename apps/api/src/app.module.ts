@@ -14,6 +14,8 @@ import { ContentModelModule } from './modules/content-model/content-model.module
 import { ContentEntryModule } from './modules/content-entry/content-entry.module.js';
 import { WorkflowModule } from './modules/workflow/workflow.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { UserModule } from './modules/user/user.module.js';
+import { N8nIntegrationModule } from './modules/n8n-integration/n8n-integration.module.js';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { AuthModule } from './modules/auth/auth.module.js';
     ContentModelModule,
     ContentEntryModule,
     WorkflowModule,
+    UserModule,
+    N8nIntegrationModule,
   ],
 })
 export class AppModule {}
