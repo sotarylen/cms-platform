@@ -22,7 +22,7 @@ export async function triggerChapterFetch(bookId: number, isRefetch: boolean = f
   const book = await getBookById(bookId);
   
   if (!book) {
-    throw new Error(`Book with ID ${bookId} not found`);
+    throw new Error(`找不到ID为 ${bookId} 的书籍`);
   }
 
   console.log(`Book details for ID ${bookId}:`, book);
@@ -57,8 +57,9 @@ export async function triggerChapterFetch(bookId: number, isRefetch: boolean = f
 
   // 检查最终配置是否存在
   if (!n8nWebhookUrl) {
-    console.error(`N8N Webhook URL is not configured for source: ${source}`);
-    throw new Error(`Service integration is not configured for source: ${source}`);
+    const errorMsg = `未配置书籍来源 "${source}" 的服务集成，请检查环境变量配置`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   // 构造发送到 webhook 的数据
@@ -68,18 +69,48 @@ export async function triggerChapterFetch(bookId: number, isRefetch: boolean = f
     book_url: book.url,
   };
 
-  const response = await fetch(n8nWebhookUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
+  let response: Response;
+  try {
+    // 测试连接
+    const url = new URL(n8nWebhookUrl);
+    console.log(`Testing connection to ${url.origin}`);
+    
+    // 先测试主机是否可达
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+    
+    const testResponse = await fetch(url.origin, {
+      method: 'GET',
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    console.log(`Host ${url.origin} is reachable, status: ${testResponse.status}`);
+    
+    // 发送实际请求
+    response = await fetch(n8nWebhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      const errorMsg = '连接n8n服务超时，请检查服务是否正在运行以及网络连接';
+      console.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    
+    const errorMsg = `无法连接到n8n服务，请检查网络连接和服务状态: ${error.message || error}`;
+    console.error(errorMsg, error);
+    throw new Error(errorMsg);
+  }
 
   if (!response.ok) {
     const errorBody = await response.text();
-    console.error(`Failed to trigger n8n workflow for book ${bookId}. Status: ${response.status}`, errorBody);
-    throw new Error('Failed to start the chapter fetch process.');
+    const errorMsg = `n8n工作流调用失败，状态码: ${response.status}，响应内容: ${errorBody}`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   // 更新书籍处理状态为已处理(1)

@@ -3,7 +3,7 @@
 一个面向企业级场景的现代化 Headless CMS，采用前后端分离、模块化与可插拔的架构。该项目包含以下关键部分：
 
 - **apps/api**：基于 NestJS + TypeORM 的 GraphQL/REST API，支持内容模型、工作流、权限、多语言、多租户等核心能力。
-- **apps/admin**：基于 Next.js + React 的可视化后台，现已内置"小说数据面板"，可直接连接 `n8n` 数据库浏览书籍、章节与摘要。
+- **apps/admin**：基于 Next.js + React 的可视化后台，现已内置“小说数据面板”，可直接连接 `n8n` 数据库浏览书籍、章节与摘要。
 - **packages/core**：共享的 TypeScript SDK、类型定义、常量和工具方法。
 - **infrastructure**：本地与生产环境的基础设施脚本（Docker Compose、Helm Chart、GitHub Actions 等）。
 
@@ -29,7 +29,7 @@ pnpm dev
 
 ## 小说数据面板
 
-`apps/admin` 现默认作为"小说阅读与策划"界面，使用方式：
+`apps/admin` 现默认作为“小说阅读与策划”界面，使用方式：
 
 1. 在仓库根目录创建 `.env.local`（或在 shell 中导出同名变量），至少包含：
 
@@ -44,21 +44,6 @@ pnpm dev
 2. 确保 Docker 中的 MariaDB 容器已运行且对外暴露 3306。
 3. 执行 `pnpm --filter admin dev`（或 `pnpm dev` 启动整套服务），浏览器访问 `http://localhost:3001`（避免占用已在用的 3000 端口）。
 4. 通过搜索、状态筛选、章节分页、阶段摘要、改编脚本等模块获取书籍信息。所有查询均为只读，不会修改数据库。
-
-## Docker 部署
-
-项目提供了 Docker Compose 配置以便在容器化环境中运行应用和服务：
-
-```bash
-# 使用 Docker Compose 启动所有服务（包括 MariaDB 和 Admin 应用）
-docker-compose -f infrastructure/docker-compose.yml up
-```
-
-这会启动两个服务：
-1. `mariadb` - MariaDB 数据库实例，预配置了 n8n 数据库
-2. `cms-admin` - Admin 应用，连接到 mariadb 服务
-
-应用将在 `http://localhost:3001` 可访问。
 
 ## 模块里程碑
 

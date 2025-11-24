@@ -16,7 +16,9 @@ export async function POST(
     }
 
     // 检查是否为重新抓取
-    const { isRefetch } = await request.json().catch(() => ({}));
+    const { isRefetch } = await request.json().catch(() => ({ isRefetch: false }));
+    
+    console.log(`触发书籍 ${bookId} 的章节抓取，重新抓取: ${isRefetch}`);
 
     await triggerChapterFetch(bookId, Boolean(isRefetch));
 
@@ -26,10 +28,19 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('触发章节抓取失败:', error);
+    
+    // 提供更友好的错误信息
+    let message = error.message || '触发章节抓取失败';
+    
+    // 如果是网络连接问题，给出更具体的建议
+    if (message.includes('fetch failed') || message.includes('无法连接到n8n服务')) {
+      message += '。请确认：1) n8n服务正在运行；2) Webhook URL正确；3) 网络连接正常。';
+    }
+    
     return NextResponse.json(
       { 
         success: false, 
-        message: error.message || '触发章节抓取失败' 
+        message: message
       },
       { status: 500 }
     );

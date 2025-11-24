@@ -24,7 +24,6 @@ const buildPool = () =>
     timezone: 'Z',
     charset: 'utf8mb4_general_ci',
     enableKeepAlive: true,
-    connectTimeout: 30000, // 30秒连接超时
   });
 
 export const getPool = () => {
@@ -35,11 +34,7 @@ export const getPool = () => {
 };
 
 export const query = async <T>(sql: string, params: unknown[] = []) => {
-  try {
-    const [rows] = await getPool().query(sql, params);
-    return rows as T;
-  } catch (error) {
-    console.error('Database query error:', error);
-    throw new Error(`数据库查询失败: ${error.message}`);
-  }
+  const [rows] = await getPool().query(sql, params);
+  return rows as T;
 };
+

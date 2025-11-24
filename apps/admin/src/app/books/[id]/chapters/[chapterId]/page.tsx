@@ -36,46 +36,6 @@ export default async function ChapterDetail(props: any) {
     notFound();
   }
 
-  const renderNav = (position: 'top' | 'bottom') => (
-    <div className="chapter-nav" aria-label="章节导航" style={{ marginBottom: 24 }}>
-      <div className="chapter-nav-slot">
-        {navigation.prev ? (
-          <Link
-            className="action-button action-button-primary"
-            href={`/books/${book.id}/chapters/${navigation.prev.id}`}
-            title={navigation.prev.title}
-          >
-            ← 上一章
-          </Link>
-        ) : (
-          <span className="action-button action-button-disabled" aria-disabled="true">
-            ← 上一章
-          </span>
-        )}
-      </div>
-      <div className="chapter-nav-slot">
-        <Link className="action-button" href={`/books/${book.id}`}>
-          返回目录
-        </Link>
-      </div>
-      <div className="chapter-nav-slot">
-        {navigation.next ? (
-          <Link
-            className="action-button action-button-primary"
-            href={`/books/${book.id}/chapters/${navigation.next.id}`}
-            title={navigation.next.title}
-          >
-            下一章 →
-          </Link>
-        ) : (
-          <span className="action-button action-button-disabled" aria-disabled="true">
-            下一章 →
-          </span>
-        )}
-      </div>
-    </div>
-  );
-
   return (
     <>
       <header className="app-header app-header--compact app-header--reading">
@@ -84,8 +44,7 @@ export default async function ChapterDetail(props: any) {
           <p className="app-subtitle">正在阅读：{chapter.title}</p>
         </div>
       </header>
-      <section className="panel" style={{ marginTop: 16 }}>
-        {renderNav('top')}
+      {/* <section className="panel"> */}
         <ChapterContentViewer 
           content={chapter.content}
           prevChapterHref={navigation.prev ? `/books/${book.id}/chapters/${navigation.prev.id}` : undefined}
@@ -94,8 +53,7 @@ export default async function ChapterDetail(props: any) {
           prevChapterTitle={navigation.prev?.title}
           nextChapterTitle={navigation.next?.title}
         />
-        {renderNav('bottom')}
-      </section>
+      {/* </section> */}
     </>
   );
 }
