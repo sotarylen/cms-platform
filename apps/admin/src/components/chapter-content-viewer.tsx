@@ -44,6 +44,7 @@ export function ChapterContentViewer({
   const [fontSize, setFontSize] = useState<number>(22);
   const [bgColor, setBgColor] = useState<string>('dark');
   const [fontFamily, setFontFamily] = useState<string>('');
+  const [loaded, setLoaded] = useState<boolean>(false);
   
   // 在hydration完成后从localStorage加载用户设置
   useEffect(() => {
@@ -53,29 +54,32 @@ export function ChapterContentViewer({
         const savedBgColor = localStorage.getItem(BACKGROUND_COLOR_KEY);
         const savedFontFamily = localStorage.getItem(FONT_FAMILY_KEY);
         
-        if (savedFontSize) {
+        // 只有当本地存储中有值时才更新状态，否则保持默认状态
+        if (savedFontSize !== null) {
           setFontSize(parseInt(savedFontSize, 10));
         }
         
-        if (savedBgColor) {
+        if (savedBgColor !== null) {
           setBgColor(savedBgColor);
         }
         
-        if (savedFontFamily) {
+        // 确保即使 savedFontFamily 为 '' 也更新状态
+        if (savedFontFamily !== null) {
           setFontFamily(savedFontFamily);
         }
       }
     };
     
     loadSettings();
+    setLoaded(true);
     
     // 监听storage事件，当其他标签页更改设置时同步更新
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === FONT_SIZE_KEY && e.newValue) {
+      if (e.key === FONT_SIZE_KEY && e.newValue !== null) {
         setFontSize(parseInt(e.newValue, 10));
-      } else if (e.key === BACKGROUND_COLOR_KEY && e.newValue) {
+      } else if (e.key === BACKGROUND_COLOR_KEY && e.newValue !== null) {
         setBgColor(e.newValue);
-      } else if (e.key === FONT_FAMILY_KEY && e.newValue) {
+      } else if (e.key === FONT_FAMILY_KEY && e.newValue !== null) {
         setFontFamily(e.newValue);
       }
     };
@@ -94,15 +98,17 @@ export function ChapterContentViewer({
       const savedBgColor = localStorage.getItem(BACKGROUND_COLOR_KEY);
       const savedFontFamily = localStorage.getItem(FONT_FAMILY_KEY);
       
-      if (savedFontSize) {
+      // 只有当本地存储中有值时才更新状态，否则保持当前状态
+      if (savedFontSize !== null) {
         setFontSize(parseInt(savedFontSize, 10));
       }
       
-      if (savedBgColor) {
+      if (savedBgColor !== null) {
         setBgColor(savedBgColor);
       }
       
-      if (savedFontFamily) {
+      // 字体设置也遵循同样的规则，确保即使为 '' 也更新
+      if (savedFontFamily !== null) {
         setFontFamily(savedFontFamily);
       }
     }
@@ -110,24 +116,24 @@ export function ChapterContentViewer({
 
   // 当字号变化时，保存到本地存储
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && loaded) {
       localStorage.setItem(FONT_SIZE_KEY, fontSize.toString());
     }
-  }, [fontSize]);
+  }, [fontSize, loaded]);
 
   // 当背景色变化时，保存到本地存储
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && loaded) {
       localStorage.setItem(BACKGROUND_COLOR_KEY, bgColor);
     }
-  }, [bgColor]);
+  }, [bgColor, loaded]);
 
   // 当字体变化时，保存到本地存储
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && loaded) {
       localStorage.setItem(FONT_FAMILY_KEY, fontFamily);
     }
-  }, [fontFamily]);
+  }, [fontFamily, loaded]);
 
   const setSize = (size: number) => {
     const clamped = Math.min(MAX_SIZE, Math.max(MIN_SIZE, size));
@@ -277,7 +283,7 @@ export function ChapterContentViewer({
       >
         {content}
       </article>
-      <div className="reader-toolbar">
+      <div className="reader-toolbar reader-toolbar-bottom">
         <div className="reader-toolbar-group">
           <div className="reader-toolbar-buttons">
             <button

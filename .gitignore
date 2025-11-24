@@ -5,5 +5,5 @@ apps/.DS_Store
 .env
 apps/admin/.next/
 .pnpm-store/
-
+.vscode/
 

@@ -9,6 +9,7 @@ import {
 } from '@/lib/queries';
 import { formatDate } from '@/lib/utils';
 import { ChapterContentViewer } from '@/components/chapter-content-viewer';
+import { ChapterEditButton } from '@/components/chapter-edit-button';
 
 export default async function ChapterDetail(props: any) {
   const { params } = props;
@@ -40,9 +41,17 @@ export default async function ChapterDetail(props: any) {
     <>
       <header className="app-header app-header--compact app-header--reading">
         <div>
-          <h1>{book.name}</h1>
-          <p className="app-subtitle">正在阅读：{chapter.title}</p>
+          <h1>{chapter.title}</h1>
+          <p>《{book.name}》</p>
         </div>
+        <ChapterEditButton 
+          chapter={{
+            id: chapter.id,
+            title: chapter.title,
+            sortOrder: chapter.sortOrder,
+          }}
+          bookId={bookId}
+        />
       </header>
       {/* <section className="panel"> */}
         <ChapterContentViewer 

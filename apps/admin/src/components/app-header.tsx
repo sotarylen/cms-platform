@@ -20,13 +20,13 @@ export function AppHeader() {
       })}
     >
       <div>
-        <p className="app-eyebrow">n8n 数据浏览</p>
-        <h1>{isHome ? '小说知识库' : '小说详情'}</h1>
+        <p className="app-eyebrow">n8n Novel Database</p>
+        <h1>{isHome ? 'NOVEL' : 'NOVEL DETIAL'}</h1>
         <p className="app-subtitle">
-          搜索书籍、浏览章节、查看摘要与改编脚本
+          Search, Preview, and Adapt Scripts for Novels
         </p>
       </div>
-      <div className="app-badge">{isHome ? 'Beta' : '内测'}</div>
+      <div className="app-badge">{isHome ? 'Beta' : 'Beta'}</div>
     </header>
   );
 }
