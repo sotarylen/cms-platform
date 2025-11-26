@@ -1,10 +1,11 @@
-node_modules/ # 把依赖、日志、env 都忽略
 *.log
 .DS_Store
+.env.local
 apps/.DS_Store
 .env
+node_modules/
 apps/admin/.next/
 apps/admin/node_modules/
+apps/api/node_modules/
 .pnpm-store/
 .vscode/
-
