@@ -4,6 +4,7 @@ node_modules/ # 把依赖、日志、env 都忽略
 apps/.DS_Store
 .env
 apps/admin/.next/
+apps/admin/node_modules/
 .pnpm-store/
 .vscode/
 
