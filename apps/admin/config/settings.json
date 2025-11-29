@@ -1,0 +1,33 @@
+{
+  "webhooks": [
+    {
+      "id": "album-fetch",
+      "title": "抓取图册内容",
+      "url": "http://localhost:5678/webhook/c75b5cb1-3172-4929-8110-c58c994be2e2",
+      "apiKey": "",
+      "description": "用于抓取图册详细信息和图片"
+    },
+    {
+      "id": "chapter-fetch-default",
+      "title": "抓取章节 (默认)",
+      "url": "http://localhost:5678/webhook/49bb8d34-acc5-4066-ab47-b54d67a7a1b6",
+      "apiKey": "",
+      "description": "默认的小说章节抓取接口"
+    },
+    {
+      "id": "chapter-fetch-xchina",
+      "title": "抓取章节 (xChina)",
+      "url": "http://localhost:5678/webhook/49bb8d34-acc5-4066-ab47-b54d67a7a1b6",
+      "apiKey": "",
+      "description": "xChina 来源的小说章节抓取接口"
+    },
+    {
+      "id": "chapter-fetch-book18",
+      "title": "抓取章节 (book18)",
+      "url": "",
+      "apiKey": "",
+      "description": "book18.org 来源的小说章节抓取接口"
+    }
+  ],
+  "albumStoragePath": "/Users/sotary/dev/n8n/file/album"
+}

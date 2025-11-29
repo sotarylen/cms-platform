@@ -10,6 +10,9 @@ import type {
   PlotStage,
   ScriptEpisode,
   ChapterNavigation,
+  Album,
+  AlbumStudio,
+  AlbumStats,
 } from '@/lib/types';
 
 const PAGE_SIZE = 30;
@@ -134,8 +137,8 @@ export const getBooks = async ({
     order === 'id_desc'
       ? 'ORDER BY b.id DESC'
       : order === 'id_asc'
-      ? 'ORDER BY b.id ASC'
-      : 'ORDER BY b.created_at DESC';
+        ? 'ORDER BY b.id ASC'
+        : 'ORDER BY b.created_at DESC';
 
   const rows = await query<any[]>(
     `
@@ -450,10 +453,10 @@ export const getPreviousBook = async (bookId: number) => {
     `,
     [bookId],
   );
-  
+
   const row = rows[0];
   if (!row) return null;
-  
+
   return {
     id: row.id,
     name: row.book_name,
@@ -471,12 +474,248 @@ export const getNextBook = async (bookId: number) => {
     `,
     [bookId],
   );
-  
+
   const row = rows[0];
   if (!row) return null;
-  
+
   return {
     id: row.id,
     name: row.book_name,
   };
+};
+
+export const getAlbumStats = async (): Promise<AlbumStats> => {
+  const [row] = await query<
+    Array<{
+      albumCount: number;
+      modelCount: number;
+      studioCount: number;
+    }>
+  >(
+    `
+    SELECT
+      (SELECT COUNT(*) FROM n8n_albums) AS albumCount,
+      (SELECT COUNT(*) FROM n8n_album_models) AS modelCount,
+      (SELECT COUNT(*) FROM n8n_album_studios) AS studioCount
+    `,
+  );
+
+  return { albums: Number(row?.albumCount ?? 0), models: Number(row?.modelCount ?? 0), studios: Number(row?.studioCount ?? 0) };
+};
+
+export const getAlbumById = async (albumId: number): Promise<Album | null> => {
+  const rows = await query<any[]>(
+    `
+    SELECT
+      a.*,
+      s.studio_name,
+      m.model_name
+    FROM n8n_albums a
+    LEFT JOIN n8n_album_studios s ON a.studio_id = s.studio_id
+    LEFT JOIN n8n_album_models m ON a.model = m.model_id
+    WHERE a.album_id = ?
+    LIMIT 1
+    `,
+    [albumId]
+  );
+
+  const row = rows[0];
+  if (!row) return null;
+
+  return {
+    id: row.album_id,
+    resource_url: row.resource_url,
+    album_number: row.album_number,
+    resource_title_raw: row.resource_title_raw,
+    title: row.resource_title_cleaned,
+    model: row.model,
+    studio_id: row.studio_id,
+    source_page_url: row.source_page_url,
+    page_number: row.page_number,
+    item_order: row.item_order,
+    status: row.status,
+    created_at: new Date(row.created_at),
+    updated_at: new Date(row.updated_at),
+    studio_name: row.studio_name,
+    model_name: row.model_name,
+  };
+};
+
+export const getAlbums = async ({
+  page = 1,
+  pageSize = 30,
+}: {
+  page?: number;
+  pageSize?: number;
+}): Promise<{
+  items: Album[];
+  total: number;
+  page: number;
+  pageSize: number;
+}> => {
+  const [countRow] = await query<Array<{ total: number }>>(
+    'SELECT COUNT(*) AS total FROM n8n_albums'
+  );
+  const total = Number(countRow?.total ?? 0);
+  const safePage = Math.max(1, page);
+  const offset = (safePage - 1) * pageSize;
+
+  const rows = await query<any[]>(
+    `
+    SELECT
+      a.*,
+      s.studio_name,
+      m.model_name
+    FROM n8n_albums a
+    LEFT JOIN n8n_album_studios s ON a.studio_id = s.studio_id
+    LEFT JOIN n8n_album_models m ON a.model = m.model_id
+    ORDER BY a.created_at DESC
+    LIMIT ? OFFSET ?
+    `,
+    [pageSize, offset]
+  );
+
+  const items: Album[] = rows.map((row) => ({
+    id: row.album_id,
+    resource_url: row.resource_url,
+    album_number: row.album_number,
+    resource_title_raw: row.resource_title_raw,
+    title: row.resource_title_cleaned,
+    model: row.model,
+    studio_id: row.studio_id,
+    source_page_url: row.source_page_url,
+    page_number: row.page_number,
+    item_order: row.item_order,
+    status: row.status,
+    created_at: new Date(row.created_at),
+    updated_at: new Date(row.updated_at),
+    studio_name: row.studio_name,
+    model_name: row.model_name,
+  }));
+
+  return { items, total, page: safePage, pageSize };
+};
+
+export const updateAlbumCover = async (albumId: number, coverUrl: string) => {
+  await query('UPDATE n8n_albums SET source_page_url = ? WHERE album_id = ?', [
+    coverUrl,
+    albumId,
+  ]);
+};
+
+export const getLatestAlbums = async (limit: number = 12): Promise<Album[]> => {
+  const rows = await query<any[]>(
+    `
+    SELECT
+      a.*,
+      s.studio_name,
+      m.model_name
+    FROM n8n_albums a
+    LEFT JOIN n8n_album_studios s ON a.studio_id = s.studio_id
+    LEFT JOIN n8n_album_models m ON a.model = m.model_id
+    ORDER BY a.updated_at DESC
+    LIMIT ?
+    `,
+    [limit]
+  );
+
+  return rows.map((row) => ({
+    id: row.album_id,
+    resource_url: row.resource_url,
+    album_number: row.album_number,
+    resource_title_raw: row.resource_title_raw,
+    title: row.resource_title_cleaned,
+    model: row.model,
+    studio_id: row.studio_id,
+    source_page_url: row.source_page_url,
+    page_number: row.page_number,
+    item_order: row.item_order,
+    status: row.status,
+    created_at: new Date(row.created_at),
+    updated_at: new Date(row.updated_at),
+    studio_name: row.studio_name,
+    model_name: row.model_name,
+  }));
+};
+
+export const getStudioById = async (studioId: number): Promise<AlbumStudio | null> => {
+  const rows = await query<any[]>(
+    'SELECT * FROM n8n_album_studios WHERE studio_id = ? LIMIT 1',
+    [studioId]
+  );
+
+  const row = rows[0];
+  if (!row) return null;
+
+  return {
+    studio_id: row.studio_id,
+    studio_name: row.studio_name,
+    studio_url: row.studio_url,
+    studio_intro: row.studio_intro,
+    studio_cover_url: row.studio_cover_url,
+    created_at: new Date(row.created_at),
+    updated_at: new Date(row.updated_at),
+  };
+};
+
+export const getAlbumsByStudio = async (studioId: number): Promise<Album[]> => {
+  const rows = await query<any[]>(
+    `
+    SELECT
+      a.*,
+      s.studio_name,
+      m.model_name
+    FROM n8n_albums a
+    LEFT JOIN n8n_album_studios s ON a.studio_id = s.studio_id
+    LEFT JOIN n8n_album_models m ON a.model = m.model_id
+    WHERE a.studio_id = ?
+    ORDER BY a.updated_at DESC
+    `,
+    [studioId]
+  );
+
+  return rows.map((row) => ({
+    id: row.album_id,
+    resource_url: row.resource_url,
+    album_number: row.album_number,
+    resource_title_raw: row.resource_title_raw,
+    title: row.resource_title_cleaned,
+    model: row.model,
+    studio_id: row.studio_id,
+    source_page_url: row.source_page_url,
+    page_number: row.page_number,
+    item_order: row.item_order,
+    status: row.status,
+    created_at: new Date(row.created_at),
+    updated_at: new Date(row.updated_at),
+    studio_name: row.studio_name,
+    model_name: row.model_name,
+  }));
+};
+
+export const updateStudio = async (
+  studioId: number,
+  data: { studio_intro?: string; studio_cover_url?: string }
+) => {
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (data.studio_intro !== undefined) {
+    updates.push('studio_intro = ?');
+    values.push(data.studio_intro);
+  }
+
+  if (data.studio_cover_url !== undefined) {
+    updates.push('studio_cover_url = ?');
+    values.push(data.studio_cover_url);
+  }
+
+  if (updates.length === 0) return;
+
+  values.push(studioId);
+
+  await query(
+    `UPDATE n8n_album_studios SET ${updates.join(', ')}, updated_at = NOW() WHERE studio_id = ?`,
+    values
+  );
 };
