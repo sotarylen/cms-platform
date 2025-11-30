@@ -1,6 +1,6 @@
 'use server';
 
-import { updateAlbumCover } from '@/lib/queries';
+import { updateAlbumCover } from '@/lib/data/albums';
 import { revalidatePath } from 'next/cache';
 
 export async function setAlbumCover(albumId: number, coverUrl: string) {

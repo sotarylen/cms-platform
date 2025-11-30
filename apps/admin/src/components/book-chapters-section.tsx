@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { formatNumber } from '@/lib/utils';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ChapterListItem } from '@/lib/types';
 
 type ChaptersSectionProps = {
@@ -19,9 +22,9 @@ export function BookChaptersSection({ bookId, initialChapters }: ChaptersSection
   const [chapters, setChapters] = useState(initialChapters);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const chapterTotalPages = Math.max(1, Math.ceil(chapters.total / chapters.pageSize));
-  
+
   // 生成分页项
   const chapterPageItems = (() => {
     if (chapterTotalPages <= 7) {
@@ -61,22 +64,21 @@ export function BookChaptersSection({ bookId, initialChapters }: ChaptersSection
 
     return items;
   })();
-  
+
   // 获取章节数据
   const fetchChapters = async (page: number) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const res = await fetch(`/api/books/${bookId}/chapters?page=${page}`);
       const data = await res.json();
-      
+
       if (!res.ok) {
         throw new Error(data.error || 'Failed to fetch chapters');
       }
-      
+
       setChapters(data);
-      // 更新URL但不刷新页面
       if (typeof window !== 'undefined') {
         const url = new URL(window.location.href);
         url.searchParams.set('chapterPage', page.toString());
@@ -89,108 +91,84 @@ export function BookChaptersSection({ bookId, initialChapters }: ChaptersSection
       setLoading(false);
     }
   };
-  
-  // 构建章节分页链接
-  const buildChapterPageLink = (targetPage: number) => {
-    // 构建相对URL以确保服务端和客户端一致
-    const searchParams = new URLSearchParams(
-      typeof window !== 'undefined' ? window.location.search : ''
-    );
-    searchParams.set('chapterPage', targetPage.toString());
-    return `?${searchParams.toString()}`;
-  };
 
   return (
-    <section className="panel collapsible">
-      <div className="collapsible-header">
-        <button
-          type="button"
-          className="collapsible-trigger"
-          onClick={() => {
-            // 这里可以添加展开/收起逻辑，但为了保持与原功能一致，我们保持始终展开
-          }}
-          aria-expanded={true}
-        >
-          <div>
-            <h3>章节目录</h3>
-            <p className="muted">共 {formatNumber(chapters.total)} 章，点击章节进入正文</p>
-          </div>
-          <span className="chevron" data-open={true}>
-            <i className={`fas fa-chevron-up`}></i>
-          </span>
-        </button>
-      </div>
-      
-      <div className="collapsible-content">
+    <Card>
+      <CardHeader>
+        <CardTitle>章节目录</CardTitle>
+        <p className="text-sm text-muted-foreground">共 {formatNumber(chapters.total)} 章，点击章节进入正文</p>
+      </CardHeader>
+
+      <CardContent>
         {error && (
-          <div className="error-message" style={{ padding: '12px', color: 'var(--danger)' }}>
+          <div className="p-3 mb-4 text-sm text-red-600 bg-red-50 rounded-md">
             错误: {error}
           </div>
         )}
-        
+
         {loading ? (
-          <p className="muted">加载中…</p>
+          <p className="text-center text-muted-foreground py-8">加载中…</p>
         ) : chapters.items.length ? (
           <>
-            <div className="chapter-grid">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
               {chapters.items.map((chapter) => (
-                <article key={chapter.id} className="chapter-card">
-                  <div className="chapter-card-order">第 {chapter.sortOrder ?? '—'} 章</div>
-                  <Link href={`/books/${bookId}/chapters/${chapter.id}`} className="chapter-card-title">
+                <Link
+                  key={chapter.id}
+                  href={`/books/${bookId}/chapters/${chapter.id}` as any}
+                  className="block p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                >
+                  <div className="text-xs text-muted-foreground mb-1">
+                    第 {chapter.sortOrder ?? '—'} 章
+                  </div>
+                  <div className="text-sm font-medium line-clamp-2">
                     {chapter.title}
-                  </Link>
-                </article>
+                  </div>
+                </Link>
               ))}
             </div>
-            <div className="chapter-pagination">
-              <a
-                className="page-link"
-                href={buildChapterPageLink(Math.max(1, chapters.page - 1))}
-                onClick={(e) => {
-                  e.preventDefault();
-                  fetchChapters(Math.max(1, chapters.page - 1));
-                }}
-                aria-disabled={chapters.page <= 1 ? 'true' : 'false'}
+
+            <div className="flex items-center justify-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchChapters(Math.max(1, chapters.page - 1))}
+                disabled={chapters.page <= 1}
               >
-                <i className="fas fa-chevron-left"></i>
-              </a>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
               {chapterPageItems.map((item, index) =>
                 item.type === 'ellipsis' ? (
-                  <span key={`ellipsis-${index}`} className="pagination-ellipsis" aria-disabled="true">
+                  <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
                     …
                   </span>
                 ) : (
-                  <a
+                  <Button
                     key={item.value}
-                    className={`page-link${item.value === chapters.page ? ' page-link--current' : ''}`}
-                    href={buildChapterPageLink(item.value)}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      fetchChapters(item.value);
-                    }}
+                    variant={item.value === chapters.page ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => fetchChapters(item.value)}
                   >
                     {item.value}
-                  </a>
+                  </Button>
                 ),
               )}
-              <a
-                className="page-link"
-                href={buildChapterPageLink(Math.min(chapterTotalPages, chapters.page + 1))}
-                onClick={(e) => {
-                  e.preventDefault();
-                  fetchChapters(Math.min(chapterTotalPages, chapters.page + 1));
-                }}
-                aria-disabled={chapters.page >= chapterTotalPages ? 'true' : 'false'}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchChapters(Math.min(chapterTotalPages, chapters.page + 1))}
+                disabled={chapters.page >= chapterTotalPages}
               >
-                <i className="fas fa-chevron-right"></i>
-              </a>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
           </>
         ) : (
-          <p className="muted">暂无章节列表。</p>
+          <p className="text-center text-muted-foreground py-8">暂无章节列表。</p>
         )}
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   );
 }
 

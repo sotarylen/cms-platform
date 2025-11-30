@@ -26,9 +26,9 @@ export async function verifyPassword(
  */
 export async function authenticateUser(
     credentials: LoginCredentials
-): Promise<SessionUser | null> {
+): Promise<User | null> {
     const users = await query<any[]>(
-        `SELECT id, username, email, password_hash, role 
+        `SELECT id, username, email, password_hash, role, created_at
      FROM users 
      WHERE username = ? AND deleted_at IS NULL
      LIMIT 1`,
@@ -50,6 +50,7 @@ export async function authenticateUser(
         username: user.username,
         email: user.email,
         role: user.role,
+        createdAt: new Date(user.created_at),
     };
 }
 
@@ -79,8 +80,7 @@ export async function createUser(data: RegisterData): Promise<User> {
         username: user.username,
         email: user.email,
         role: user.role,
-        created_at: new Date(user.created_at),
-        updated_at: new Date(user.updated_at),
+        createdAt: new Date(user.created_at),
     };
 }
 
@@ -106,8 +106,7 @@ export async function getUserById(id: number): Promise<User | null> {
         username: user.username,
         email: user.email,
         role: user.role,
-        created_at: new Date(user.created_at),
-        updated_at: new Date(user.updated_at),
+        createdAt: new Date(user.created_at),
     };
 }
 
@@ -138,8 +137,7 @@ export async function getAllUsers(): Promise<User[]> {
         username: user.username,
         email: user.email,
         role: user.role,
-        created_at: new Date(user.created_at),
-        updated_at: new Date(user.updated_at),
+        createdAt: new Date(user.created_at),
     }));
 }
 
@@ -163,5 +161,41 @@ export async function deleteUser(userId: number): Promise<void> {
     await query(
         `UPDATE users SET deleted_at = NOW() WHERE id = ?`,
         [userId]
+    );
+}
+
+/**
+ * Update user details (admin only)
+ */
+export async function updateUser(
+    userId: number,
+    data: { email?: string; password?: string; role?: 'admin' | 'user' }
+): Promise<void> {
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (data.email !== undefined) {
+        updates.push('email = ?');
+        values.push(data.email || null);
+    }
+
+    if (data.password) {
+        const passwordHash = await hashPassword(data.password);
+        updates.push('password_hash = ?');
+        values.push(passwordHash);
+    }
+
+    if (data.role) {
+        updates.push('role = ?');
+        values.push(data.role);
+    }
+
+    if (updates.length === 0) return;
+
+    values.push(userId);
+
+    await query(
+        `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ?`,
+        values
     );
 }

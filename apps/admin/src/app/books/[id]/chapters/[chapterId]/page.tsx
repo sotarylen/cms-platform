@@ -1,15 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import {
-  getBookById,
-  getChapterContent,
-  getChapterNavigation,
-  getPhasedSummaries,
-  getPlotStages,
-} from '@/lib/queries';
-import { formatDate } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { getBookById } from '@/lib/data/books';
+import { getChapterContent, getChapterNavigation } from '@/lib/data/chapters';
 import { ChapterContentViewer } from '@/components/chapter-content-viewer';
 import { ChapterEditButton } from '@/components/chapter-edit-button';
+import { Home, BookOpen } from 'lucide-react';
 
 export default async function ChapterDetail(props: any) {
   const { params } = props;
@@ -23,46 +19,51 @@ export default async function ChapterDetail(props: any) {
     getChapterNavigation(bookId, chapterId),
   ]);
 
-  // 读取书籍级别的聚合数据（用于在章节页显示参考信息）
-  const [phases, stages] = await Promise.all([
-    getPhasedSummaries(bookId),
-    getPlotStages(bookId),
-  ]);
-
-  // 仅在存在实质内容（非空字符串或非空数组项）时才显示对应 Block
-  const hasPhasesContent = phases && phases.some((p) => p.summary && p.summary.trim() !== '');
-  const hasStagesContent = stages && stages.some((s) => s.summary && s.summary.trim() !== '');
-
   if (!book || !chapter || chapter.bookId !== book.id) {
     notFound();
   }
 
   return (
-    <>
-      <header className="app-header app-header--compact app-header--reading">
-        <div>
-          <h1>{chapter.title}</h1>
-          <p>《{book.name}》</p>
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className="sticky top-0 z-20 bg-card/95 backdrop-blur border-b border-border shadow-sm">
+        <div className="px-6 py-4 flex items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold mb-1">{chapter.title}</h1>
+            <p className="text-sm text-muted-foreground">《{book.name}》</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/" passHref>
+              <Button variant="ghost" size="sm" title="返回首页">
+                <Home className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href={`/books/${bookId}` as any} passHref>
+              <Button variant="ghost" size="sm" title="返回目录">
+                <BookOpen className="h-4 w-4" />
+              </Button>
+            </Link>
+            <ChapterEditButton
+              chapter={{
+                id: chapter.id,
+                title: chapter.title,
+                sortOrder: chapter.sortOrder,
+              }}
+              bookId={bookId}
+            />
+          </div>
         </div>
-        <ChapterEditButton 
-          chapter={{
-            id: chapter.id,
-            title: chapter.title,
-            sortOrder: chapter.sortOrder,
-          }}
-          bookId={bookId}
-        />
-      </header>
-      {/* <section className="panel"> */}
-        <ChapterContentViewer 
-          content={chapter.content}
-          prevChapterHref={navigation.prev ? `/books/${book.id}/chapters/${navigation.prev.id}` : undefined}
-          nextChapterHref={navigation.next ? `/books/${book.id}/chapters/${navigation.next.id}` : undefined}
-          bookHref={`/books/${book.id}`}
-          prevChapterTitle={navigation.prev?.title}
-          nextChapterTitle={navigation.next?.title}
-        />
-      {/* </section> */}
-    </>
+      </div>
+
+      {/* Reader Content */}
+      <ChapterContentViewer
+        content={chapter.content}
+        prevChapterHref={navigation.prev ? `/books/${book.id}/chapters/${navigation.prev.id}` : undefined}
+        nextChapterHref={navigation.next ? `/books/${book.id}/chapters/${navigation.next.id}` : undefined}
+        bookHref={`/books/${book.id}`}
+        prevChapterTitle={navigation.prev?.title}
+        nextChapterTitle={navigation.next?.title}
+      />
+    </div>
   );
 }

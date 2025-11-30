@@ -2,6 +2,9 @@
 
 import React, { useState } from 'react';
 
+import { Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
 interface AlbumFetchButtonProps {
     albumId: number;
     albumTitle: string;
@@ -67,21 +70,22 @@ const AlbumFetchButton: React.FC<AlbumFetchButtonProps> = ({
 
     return (
         <>
-            <button
+            <Button
                 onClick={handleClick}
                 disabled={isLoading}
-                className={`action-button ${className}`}
+                className={className}
+                size="sm"
             >
-                <i className="fas fa-download"></i>
+                <Download className="mr-2 h-4 w-4" />
                 {isLoading ? '抓取中...' : '抓取图册'}
-            </button>
+            </Button>
             {error && (
-                <div className="auth-error" style={{ marginTop: 8 }}>
+                <div className="text-destructive text-sm mt-2">
                     错误: {error}
                 </div>
             )}
             {success && !isLoading && (
-                <div style={{ marginTop: 8, color: 'var(--success)', fontSize: 14 }}>
+                <div className="text-green-600 text-sm mt-2">
                     {success}，5秒后将刷新页面...
                 </div>
             )}

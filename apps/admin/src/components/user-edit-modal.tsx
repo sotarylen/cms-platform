@@ -1,20 +1,41 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { UserEntity } from '@/lib/types';
+import { User } from '@/lib/types';
+import { createUserAction, updateUserAction } from '@/app/actions/admin';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface UserEditModalProps {
-  user: UserEntity | null;
+  user: User | null;
+  isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
 }
 
-export function UserEditModal({ user, onClose, onSave }: UserEditModalProps) {
+export function UserEditModal({ user, isOpen, onClose, onSave }: UserEditModalProps) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('user');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -28,11 +49,13 @@ export function UserEditModal({ user, onClose, onSave }: UserEditModalProps) {
       setPassword('');
       setRole('user');
     }
-  }, [user]);
+    setError('');
+  }, [user, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
       const userData = {
@@ -42,96 +65,107 @@ export function UserEditModal({ user, onClose, onSave }: UserEditModalProps) {
         ...(password && { password }),
       };
 
+      let result;
       if (user) {
-        // 更新用户
-        // await fetch(`/api/users/${user.id}`, {
-        //   method: 'PUT',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(userData),
-        // });
+        result = await updateUserAction(user.id, userData);
       } else {
-        // 创建新用户
-        // await fetch('/api/users', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ ...userData, password: password || '123456' }),
-        // });
+        result = await createUserAction({ ...userData, password: password || '123456' });
       }
 
-      onSave();
+      if (result.success) {
+        onSave();
+        onClose();
+      } else {
+        setError(result.error || '保存失败');
+      }
     } catch (err) {
       setError('保存用户失败');
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal">
-        <div className="modal-header">
-          <h2>{user ? '编辑用户' : '添加用户'}</h2>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="modal-body">
-          {error && <div className="alert alert-error">{error}</div>}
-          
-          <div className="form-group">
-            <label htmlFor="username">用户名</label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="email">邮箱</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          
-          {!user && (
-            <div className="form-group">
-              <label htmlFor="password">密码</label>
-              <input
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>{user ? '编辑用户' : '添加用户'}</DialogTitle>
+          <DialogDescription>
+            {user ? '修改用户信息。' : '创建一个新用户。'}
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            {error && (
+              <div className="text-sm text-red-500 font-medium">
+                {error}
+              </div>
+            )}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="username" className="text-right">
+                用户名
+              </Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="col-span-3"
+                required
+                disabled={!!user} // Username usually shouldn't change
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                邮箱
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="password" className="text-right">
+                密码
+              </Label>
+              <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="col-span-3"
+                placeholder={user ? "留空保持不变" : "必填"}
                 required={!user}
               />
             </div>
-          )}
-          
-          <div className="form-group">
-            <label htmlFor="role">角色</label>
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-            >
-              <option value="user">用户</option>
-              <option value="admin">管理员</option>
-            </select>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="role" className="text-right">
+                角色
+              </Label>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="选择角色" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">普通用户</SelectItem>
+                  <SelectItem value="admin">管理员</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               取消
-            </button>
-            <button type="submit" className="btn btn-primary">
-              保存
-            </button>
-          </div>
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? '保存中...' : '保存'}
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

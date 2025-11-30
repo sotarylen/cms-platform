@@ -1,3 +1,4 @@
+import { Badge } from '@/components/ui/badge';
 import { getStatusMeta } from '@/lib/utils';
 
 type Props = {
@@ -6,10 +7,17 @@ type Props = {
 
 export function StatusPill({ status }: Props) {
   const meta = getStatusMeta(status);
+
+  const variantMap: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+    'neutral': 'secondary',
+    'warning': 'outline',
+    'success': 'default',
+    'error': 'destructive',
+  };
+
   return (
-    <span className="status-pill" data-tone={meta.tone}>
+    <Badge variant={variantMap[meta.tone] || 'secondary'}>
       {meta.label}
-    </span>
+    </Badge>
   );
 }
-

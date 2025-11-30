@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { revalidatePath } from 'next/cache';
-import { getBookById, updateBookCover } from '@/lib/queries';
+import { getBookById, updateBookCover } from '@/lib/data/books';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
@@ -12,10 +12,11 @@ export async function POST(
   {
     params,
   }: {
-    params: { id: string };
+    params: Promise<{ id: string }>;
   },
 ) {
-  const bookId = Number(params.id);
+  const resolvedParams = await params;
+  const bookId = Number(resolvedParams.id);
   if (!bookId || Number.isNaN(bookId)) {
     return NextResponse.json({ message: '无效的书籍 ID' }, { status: 400 });
   }
@@ -50,6 +51,6 @@ export async function POST(
   await updateBookCover(bookId, publicPath);
   revalidatePath(`/books/${bookId}`);
 
-  return NextResponse.redirect(new URL(`/books/${bookId}`, request.url));
+  return NextResponse.json({ url: publicPath });
 }
 

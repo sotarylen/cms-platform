@@ -1,4 +1,4 @@
-import { getBookById } from '@/lib/queries';
+import { getBookById } from '@/lib/data/books';
 import { query } from '@/lib/db';
 import { getWebhookById } from '@/lib/config';
 

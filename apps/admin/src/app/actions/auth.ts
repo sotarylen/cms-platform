@@ -47,6 +47,7 @@ export async function registerAction(data: RegisterData) {
             username: user.username,
             email: user.email,
             role: user.role,
+            createdAt: new Date(),
         });
 
         return { success: true };

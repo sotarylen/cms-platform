@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Download, RefreshCw, Loader2 } from 'lucide-react';
 
 interface BookFetchButtonProps {
   bookId: number;
@@ -9,7 +11,7 @@ interface BookFetchButtonProps {
   className?: string;
 }
 
-const BookFetchButton: React.FC<BookFetchButtonProps> = ({ 
+const BookFetchButton: React.FC<BookFetchButtonProps> = ({
   bookId,
   status,
   onFetchComplete,
@@ -18,19 +20,6 @@ const BookFetchButton: React.FC<BookFetchButtonProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<{
-    requestId: string | null;
-    startTime: number | null;
-    endTime: number | null;
-    responseStatus: number | null;
-    responseData: any;
-  }>({
-    requestId: null,
-    startTime: null,
-    endTime: null,
-    responseStatus: null,
-    responseData: null
-  });
 
   // 根据书籍状态确定按钮文本
   const getButtonText = () => {
@@ -41,29 +30,10 @@ const BookFetchButton: React.FC<BookFetchButtonProps> = ({
   };
 
   const handleClick = async () => {
-    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // 更新调试信息
-    setDebugInfo(prev => ({
-      ...prev,
-      requestId,
-      startTime: Date.now(),
-      endTime: null,
-      responseStatus: null,
-      responseData: null
-    }));
-
-    console.log(`[BookFetchButton] 开始抓取书籍 ${bookId}`, {
-      requestId,
-      timestamp: new Date().toISOString(),
-      bookId,
-      isRefetch: status === 1
-    });
-
     setIsLoading(true);
     setError(null);
     setSuccess(null);
-    
+
     try {
       // 触发抓取任务
       const response = await fetch(`/api/books/${bookId}/fetch`, {
@@ -75,21 +45,7 @@ const BookFetchButton: React.FC<BookFetchButtonProps> = ({
       });
 
       const result = await response.json();
-      
-      // 更新调试信息
-      setDebugInfo(prev => ({
-        ...prev,
-        responseStatus: response.status,
-        responseData: result
-      }));
 
-      console.log(`[BookFetchButton] 收到响应`, {
-        requestId,
-        status: response.status,
-        responseTime: `${Date.now() - (debugInfo.startTime || Date.now())}ms`,
-        response: result
-      });
-      
       if (!response.ok) {
         throw new Error(result.message || '抓取失败');
       }
@@ -99,7 +55,7 @@ const BookFetchButton: React.FC<BookFetchButtonProps> = ({
 
       // 等待5秒后刷新页面或执行回调
       await new Promise(resolve => setTimeout(resolve, 5000));
-      
+
       // 触发完成回调（如果有的话）
       if (onFetchComplete) {
         onFetchComplete();
@@ -112,43 +68,39 @@ const BookFetchButton: React.FC<BookFetchButtonProps> = ({
       setError(errorMessage);
       console.error('抓取章节失败:', err);
     } finally {
-      // 更新结束时间
-      setDebugInfo(prev => ({
-        ...prev,
-        endTime: Date.now()
-      }));
-      
-      console.log(`[BookFetchButton] 操作完成`, {
-        requestId: debugInfo.requestId,
-        duration: `${(debugInfo.endTime || Date.now()) - (debugInfo.startTime || Date.now())}ms`,
-        finalStatus: error ? 'error' : 'success'
-      });
-      
       setIsLoading(false);
     }
   };
 
   return (
-    <>
-      <button
+    <div className="flex flex-col items-start">
+      <Button
+        variant="outline"
+        size="sm"
         onClick={handleClick}
         disabled={isLoading}
-        className={`action-button ${className}`}
+        className={className}
       >
-        <i className={`fas ${status === 1 ? 'fa-sync' : 'fa-download'}`}></i>
+        {isLoading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : status === 1 ? (
+          <RefreshCw className="mr-2 h-4 w-4" />
+        ) : (
+          <Download className="mr-2 h-4 w-4" />
+        )}
         {isLoading ? '抓取中...' : getButtonText()}
-      </button>
+      </Button>
       {error && (
-        <div className="text-red-500 text-sm mt-1">
+        <div className="text-red-500 text-xs mt-1">
           错误: {error}
         </div>
       )}
       {success && !isLoading && (
-        <div className="text-green-500 text-sm mt-1">
-          {success}，5秒后将刷新页面...
+        <div className="text-green-500 text-xs mt-1">
+          {success}，5秒后刷新...
         </div>
       )}
-    </>
+    </div>
   );
 };
 

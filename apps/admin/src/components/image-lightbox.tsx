@@ -2,6 +2,27 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import {
+    X,
+    ChevronLeft,
+    ChevronRight,
+    ZoomIn,
+    ZoomOut,
+    Play,
+    Pause,
+    Settings,
+    Image as ImageIcon
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 type Props = {
     images: string[];
@@ -11,11 +32,11 @@ type Props = {
 };
 
 export function ImageLightbox({ images, initialIndex, onClose, onSetCover }: Props) {
-    const [transitionMode, setTransitionMode] = useState<'fade' | 'slide' | 'none'>('fade');
+    const [transitionMode, setTransitionMode] = useState<'fade' | 'slide' | 'combined' | 'none'>('combined');
     const [autoPlayInterval, setAutoPlayInterval] = useState(3000);
     const [showSettings, setShowSettings] = useState(false);
     const [direction, setDirection] = useState<'next' | 'prev'>('next');
-    const [animClass, setAnimClass] = useState('');
+    const [exitingIndex, setExitingIndex] = useState<number | null>(null);
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [scale, setScale] = useState(1);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -36,27 +57,37 @@ export function ImageLightbox({ images, initialIndex, onClose, onSetCover }: Pro
     useEffect(() => {
         setScale(1);
         setPosition({ x: 0, y: 0 });
+    }, [currentIndex]);
 
-        // 触发动画
-        if (transitionMode === 'fade') {
-            setAnimClass('anim-fade');
-        } else if (transitionMode === 'slide') {
-            setAnimClass(direction === 'next' ? 'anim-slide-next' : 'anim-slide-prev');
-        } else {
-            setAnimClass('');
+    // 动画清理
+    useEffect(() => {
+        if (exitingIndex !== null) {
+            const timer = setTimeout(() => {
+                setExitingIndex(null);
+            }, 1000);
+            return () => clearTimeout(timer);
         }
+    }, [exitingIndex]);
 
-        // 移除动画类以便下次触发
-        const timer = setTimeout(() => setAnimClass(''), 400);
-        return () => clearTimeout(timer);
-    }, [currentIndex, transitionMode, direction]);
+    const handlePrev = useCallback((stopAutoplay = true) => {
+        setDirection('prev');
+        setExitingIndex(currentIndex);
+        setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+        if (stopAutoplay) setIsPlaying(false);
+    }, [currentIndex, images.length]);
+
+    const handleNext = useCallback((stopAutoplay = true) => {
+        setDirection('next');
+        setExitingIndex(currentIndex);
+        setCurrentIndex((prev) => (prev + 1) % images.length);
+        if (stopAutoplay) setIsPlaying(false);
+    }, [currentIndex, images.length]);
 
     // 自动播放逻辑
     useEffect(() => {
         if (isPlaying) {
             playTimerRef.current = setInterval(() => {
-                setDirection('next');
-                setCurrentIndex((prev) => (prev + 1) % images.length);
+                handleNext(false);
             }, autoPlayInterval);
         } else {
             if (playTimerRef.current) {
@@ -70,19 +101,7 @@ export function ImageLightbox({ images, initialIndex, onClose, onSetCover }: Pro
                 clearInterval(playTimerRef.current);
             }
         };
-    }, [isPlaying, images.length, autoPlayInterval]);
-
-    const handlePrev = useCallback(() => {
-        setDirection('prev');
-        setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-        setIsPlaying(false); // 手动切换时停止自动播放
-    }, [images.length]);
-
-    const handleNext = useCallback(() => {
-        setDirection('next');
-        setCurrentIndex((prev) => (prev + 1) % images.length);
-        setIsPlaying(false);
-    }, [images.length]);
+    }, [isPlaying, images.length, autoPlayInterval, handleNext]);
 
     const handleZoomIn = useCallback(() => {
         setScale((prev) => Math.min(prev + 0.25, 5));
@@ -177,38 +196,120 @@ export function ImageLightbox({ images, initialIndex, onClose, onSetCover }: Pro
         }
     };
 
+    const getAnimationClasses = () => {
+        if (exitingIndex === null) return { entering: '', exiting: '' };
+
+        if (transitionMode === 'fade') {
+            return {
+                entering: 'animate-in fade-in duration-1000 ease-in-out fill-mode-forwards',
+                exiting: 'animate-out fade-out duration-1000 ease-in-out fill-mode-forwards'
+            };
+        }
+        if (transitionMode === 'slide') {
+            if (direction === 'next') {
+                return {
+                    entering: 'animate-in slide-in-from-right duration-1000 ease-in-out fill-mode-forwards',
+                    exiting: 'animate-out slide-out-to-left duration-1000 ease-in-out fill-mode-forwards'
+                };
+            } else {
+                return {
+                    entering: 'animate-in slide-in-from-left duration-1000 ease-in-out fill-mode-forwards',
+                    exiting: 'animate-out slide-out-to-right duration-1000 ease-in-out fill-mode-forwards'
+                };
+            }
+        }
+        if (transitionMode === 'combined') {
+            if (direction === 'next') {
+                return {
+                    entering: 'animate-in slide-in-from-right fade-in zoom-in duration-1000 ease-in-out fill-mode-forwards',
+                    exiting: 'animate-out slide-out-to-left fade-out zoom-out duration-1000 ease-in-out fill-mode-forwards'
+                };
+            } else {
+                return {
+                    entering: 'animate-in slide-in-from-left fade-in zoom-in duration-1000 ease-in-out fill-mode-forwards',
+                    exiting: 'animate-out slide-out-to-right fade-out zoom-out duration-1000 ease-in-out fill-mode-forwards'
+                };
+            }
+        }
+        return { entering: '', exiting: '' };
+    };
+
+    const { entering: enteringClass, exiting: exitingClass } = getAnimationClasses();
+
     // 使用 Portal 渲染到 body
     if (typeof document === 'undefined') return null;
 
     return createPortal(
         <div
-            className="image-lightbox"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm"
             onClick={handleBackdropClick}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
         >
-            <div className="lightbox-container">
+            <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
                 {/* 关闭按钮 */}
-                <button className="lightbox-close-btn" onClick={onClose} title="关闭 (Esc)">
-                    <i className="fas fa-times"></i>
-                </button>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 hover:text-white"
+                    onClick={onClose}
+                    title="关闭 (Esc)"
+                >
+                    <X className="h-6 w-6" />
+                </Button>
 
                 {/* 主图片区域 */}
                 <div
-                    className="lightbox-image-wrapper"
+                    className="relative w-full h-full flex items-center justify-center"
                     onClick={handleBackdropClick}
                     onWheel={handleWheel}
                 >
+                    {/* 预加载前后图片 */}
+                    <div className="hidden">
+                        {images[(currentIndex + 1) % images.length] && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={images[(currentIndex + 1) % images.length]} alt="preload next" />
+                        )}
+                        {images[(currentIndex - 1 + images.length) % images.length] && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={images[(currentIndex - 1 + images.length) % images.length]} alt="preload prev" />
+                        )}
+                    </div>
+
+                    {/* Exiting Image (Previous) */}
+                    {exitingIndex !== null && (
+                        <img
+                            key={`exiting-${exitingIndex}`}
+                            src={images[exitingIndex]}
+                            alt="Exiting"
+                            style={{
+                                maxHeight: '100vh',
+                                maxWidth: '100vw',
+                                objectFit: 'contain',
+                                position: 'absolute',
+                                zIndex: 1
+                            }}
+                            className={cn("select-none pointer-events-none", exitingClass)}
+                            draggable={false}
+                        />
+                    )}
+
+                    {/* Entering/Current Image */}
                     <img
-                        key={currentIndex} // 强制重新渲染以触发动画
+                        key={currentIndex}
                         src={images[currentIndex]}
                         alt={`Image ${currentIndex + 1}`}
                         style={{
                             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
                             cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
-                            transition: isDragging ? 'none' : 'transform 0.2s ease-out'
+                            transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+                            maxHeight: '100vh',
+                            maxWidth: '100vw',
+                            objectFit: 'contain',
+                            position: 'absolute',
+                            zIndex: 2
                         }}
-                        className={`lightbox-image ${animClass}`}
+                        className={cn("select-none", enteringClass)}
                         draggable={false}
                         onMouseDown={handleMouseDown}
                         onMouseMove={handleMouseMove}
@@ -216,86 +317,123 @@ export function ImageLightbox({ images, initialIndex, onClose, onSetCover }: Pro
                 </div>
 
                 {/* 左右导航按钮 */}
-                <button className="lightbox-nav-btn prev" onClick={handlePrev} title="上一张 (←)">
-                    <i className="fas fa-chevron-left"></i>
-                </button>
-                <button className="lightbox-nav-btn next" onClick={handleNext} title="下一张 (→)">
-                    <i className="fas fa-chevron-right"></i>
-                </button>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-40 text-white hover:bg-white/20 hover:text-white h-12 w-12 rounded-full"
+                    onClick={() => handlePrev()}
+                    title="上一张 (←)"
+                >
+                    <ChevronLeft className="h-8 w-8" />
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 z-40 text-white hover:bg-white/20 hover:text-white h-12 w-12 rounded-full"
+                    onClick={() => handleNext()}
+                    title="下一张 (→)"
+                >
+                    <ChevronRight className="h-8 w-8" />
+                </Button>
 
                 {/* 底部控制栏 */}
-                <div className="lightbox-controls">
-                    <div className="controls-group">
-                        <button onClick={handleZoomOut} title="缩小 (-)">
-                            <i className="fas fa-search-minus"></i>
-                        </button>
-                        <span className="zoom-level">{Math.round(scale * 100)}%</span>
-                        <button onClick={handleZoomIn} title="放大 (+)">
-                            <i className="fas fa-search-plus"></i>
-                        </button>
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-black/50 backdrop-blur rounded-full flex items-center justify-center gap-4 z-50 shadow-lg border border-white/10">
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={handleZoomOut} title="缩小 (-)">
+                            <ZoomOut className="h-5 w-5" />
+                        </Button>
+                        <span className="text-white text-sm w-12 text-center">{Math.round(scale * 100)}%</span>
+                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={handleZoomIn} title="放大 (+)">
+                            <ZoomIn className="h-5 w-5" />
+                        </Button>
                     </div>
 
-                    <div className="controls-group">
-                        <button onClick={togglePlay} title={isPlaying ? "暂停 (Space)" : "自动播放 (Space)"}>
-                            <i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'}`}></i>
-                        </button>
+                    <div className="w-px h-6 bg-white/20 mx-2" />
+
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={togglePlay} title={isPlaying ? "暂停 (Space)" : "自动播放 (Space)"}>
+                            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                        </Button>
                     </div>
 
                     {onSetCover && (
-                        <div className="controls-group">
-                            <button
-                                onClick={() => onSetCover(currentIndex)}
-                                title="设为封面"
-                            >
-                                <i className="fas fa-image"></i>
-                            </button>
-                        </div>
+                        <>
+                            <div className="w-px h-6 bg-white/20 mx-2" />
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-white hover:bg-white/20"
+                                    onClick={() => onSetCover(currentIndex)}
+                                    title="设为封面"
+                                >
+                                    <ImageIcon className="h-5 w-5" />
+                                </Button>
+                            </div>
+                        </>
                     )}
 
-                    <div className="controls-group">
-                        <button
+                    <div className="w-px h-6 bg-white/20 mx-2" />
+
+                    <div className="relative">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className={cn("text-white hover:bg-white/20", showSettings && "bg-white/20")}
                             onClick={() => setShowSettings(!showSettings)}
                             title="设置"
-                            style={{ color: showSettings ? 'white' : '#ccc' }}
                         >
-                            <i className="fas fa-cog"></i>
-                        </button>
+                            <Settings className="h-5 w-5" />
+                        </Button>
+
+                        {/* 设置面板 */}
+                        {showSettings && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-4 bg-popover text-popover-foreground rounded-md shadow-lg border border-border" onClick={e => e.stopPropagation()}>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label>切换效果</Label>
+                                        <Select
+                                            value={transitionMode}
+                                            onValueChange={(value: any) => setTransitionMode(value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="combined">组合效果</SelectItem>
+                                                <SelectItem value="fade">淡入淡出</SelectItem>
+                                                <SelectItem value="slide">滑动</SelectItem>
+                                                <SelectItem value="none">无动画</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>自动播放间隔</Label>
+                                        <Select
+                                            value={autoPlayInterval.toString()}
+                                            onValueChange={(value) => setAutoPlayInterval(Number(value))}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="2000">2 秒</SelectItem>
+                                                <SelectItem value="3000">3 秒</SelectItem>
+                                                <SelectItem value="5000">5 秒</SelectItem>
+                                                <SelectItem value="10000">10 秒</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="controls-group info">
-                        <span>{currentIndex + 1} / {images.length}</span>
-                    </div>
+                    <div className="w-px h-6 bg-white/20 mx-2" />
 
-                    {/* 设置面板 */}
-                    {showSettings && (
-                        <div className="lightbox-settings-popover" onClick={e => e.stopPropagation()}>
-                            <div className="settings-row">
-                                <label>切换效果</label>
-                                <select
-                                    value={transitionMode}
-                                    onChange={(e) => setTransitionMode(e.target.value as any)}
-                                    className="settings-select"
-                                >
-                                    <option value="fade">淡入淡出</option>
-                                    <option value="slide">滑动</option>
-                                    <option value="none">无动画</option>
-                                </select>
-                            </div>
-                            <div className="settings-row">
-                                <label>自动播放间隔</label>
-                                <select
-                                    value={autoPlayInterval}
-                                    onChange={(e) => setAutoPlayInterval(Number(e.target.value))}
-                                    className="settings-select"
-                                >
-                                    <option value={2000}>2 秒</option>
-                                    <option value={3000}>3 秒</option>
-                                    <option value={5000}>5 秒</option>
-                                    <option value={10000}>10 秒</option>
-                                </select>
-                            </div>
-                        </div>
-                    )}
+                    <div className="text-white text-sm font-medium">
+                        {currentIndex + 1} / {images.length}
+                    </div>
                 </div>
             </div>
         </div>,

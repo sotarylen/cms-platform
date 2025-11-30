@@ -91,24 +91,26 @@ export type RecentChapter = {
 };
 
 
-export type Album = {
+export interface Album {
   id: number;
   resource_url: string;
-  album_number: string | null;
+  album_number: string;
   resource_title_raw: string;
   title: string;
-  model: string | null;
-  studio_id: number | null;
-  source_page_url: string | null;
-  page_number: number | null;
-  item_order: number | null;
-  status: number | null;
+  model: number;
+  studio_id: number;
+  source_page_url: string;
+  page_number: number;
+  item_order: number;
+  status: string;
   created_at: Date;
   updated_at: Date;
   // Joined fields
-  studio_name?: string | null;
-  model_name?: string | null;
-};
+  studio_name?: string;
+  model_name?: string;
+  image_count?: number;
+}
+
 
 export type AlbumModel = {
   id: number;
@@ -125,6 +127,7 @@ export type AlbumStudio = {
   studio_url?: string;
   studio_intro?: string;
   studio_cover_url?: string;
+  album_count?: number;
   created_at?: Date;
   updated_at?: Date;
 };
@@ -140,17 +143,25 @@ export type User = {
   id: number;
   username: string;
   email: string | null;
-  role: 'admin' | 'user';
-  created_at: Date;
-  updated_at: Date;
+  role: string;
+  createdAt: Date;
 };
 
-export type SessionUser = {
+export type Session = {
+  userId: number;
+  username: string;
+  role: string;
+};
+
+export type UserEntity = {
   id: number;
   username: string;
   email: string | null;
-  role: 'admin' | 'user';
+  role: string;
+  created_at: Date;
 };
+
+export type SessionUser = User;
 
 export type LoginCredentials = {
   username: string;

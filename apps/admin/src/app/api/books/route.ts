@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getBooks } from '@/lib/queries';
+import { getBooks } from '@/lib/data/books';
 
 export async function GET(req: Request) {
   try {
@@ -8,11 +8,13 @@ export async function GET(req: Request) {
     const search = url.searchParams.get('query') || undefined;
     const source = url.searchParams.get('source') || undefined;
     const page = url.searchParams.get('page') ? Number(url.searchParams.get('page')) : 1;
+    const pageSize = url.searchParams.get('pageSize') ? Number(url.searchParams.get('pageSize')) : undefined;
 
     const opts: any = {
       search,
       source,
       page,
+      pageSize,
       // default ordering (can be overridden per-tab)
       order: 'created_at_desc',
     };

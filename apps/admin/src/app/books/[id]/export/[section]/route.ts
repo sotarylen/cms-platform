@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import {
   getBookById,
   getBookSummary,
-  getPhasedSummaries,
   getPlotStages,
-} from '@/lib/queries';
+  getPhasedSummaries,
+} from '@/lib/data/books';
 
 const SECTION_LABELS: Record<string, string> = {
   summary: '整书摘要',
@@ -29,11 +29,11 @@ const formatPhasesText = async (bookId: number) => {
   const phases = await getPhasedSummaries(bookId);
   const sections = phases.length
     ? phases
-        .map(
-          (phase) =>
-            `阶段：第 ${phase.startSort} - ${phase.endSort} 章\n${phase.summary ?? '暂无内容'}\n`,
-        )
-        .join('\n')
+      .map(
+        (phase) =>
+          `阶段：第 ${phase.startSort} - ${phase.endSort} 章\n${phase.summary ?? '暂无内容'}\n`,
+      )
+      .join('\n')
     : '暂无阶段性摘要。';
   return {
     filename: `${book.name}-阶段性摘要.txt`,
@@ -47,19 +47,19 @@ const formatStagesText = async (bookId: number) => {
   const stages = await getPlotStages(bookId);
   const sections = stages.length
     ? stages
-        .map((stage) => {
-          const lines = [
-            `阶段 ${stage.stageNumber}（第 ${stage.startEpisode}-${stage.endEpisode} 集）`,
-            `名称：${stage.stageName}`,
-            `概述：${stage.summary ?? '暂无概述'}`,
-          ];
-          if (stage.stageGoal) lines.push(`目标：${stage.stageGoal}`);
-          if (stage.conflict) lines.push(`冲突：${stage.conflict}`);
-          if (stage.protagonistUpgrade)
-            lines.push(`主角成长：${stage.protagonistUpgrade}`);
-          return `${lines.join('\n')}\n`;
-        })
-        .join('\n')
+      .map((stage) => {
+        const lines = [
+          `阶段 ${stage.stageNumber}（第 ${stage.startEpisode}-${stage.endEpisode} 集）`,
+          `名称：${stage.stageName}`,
+          `概述：${stage.summary ?? '暂无概述'}`,
+        ];
+        if (stage.stageGoal) lines.push(`目标：${stage.stageGoal}`);
+        if (stage.conflict) lines.push(`冲突：${stage.conflict}`);
+        if (stage.protagonistUpgrade)
+          lines.push(`主角成长：${stage.protagonistUpgrade}`);
+        return `${lines.join('\n')}\n`;
+      })
+      .join('\n')
     : '暂无剧情阶段数据。';
   return {
     filename: `${book.name}-剧情阶段.txt`,
@@ -108,4 +108,3 @@ export async function GET(_request: Request, context: any) {
     },
   });
 }
-

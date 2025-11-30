@@ -1,26 +1,44 @@
 import type { Metadata } from 'next';
-import '@/app/globals.css';
-import { AppHeader } from '@/components/app-header';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { AppSidebar } from '@/components/app-sidebar';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { ThemeProvider } from '@/components/theme-provider';
+import { cn } from '@/lib/utils';
+import { getSession } from '@/lib/session';
+import { Toaster } from '@/components/ui/sonner';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: '小说资料面板',
-  description: '以更友好的方式浏览 n8n 数据库中的小说内容',
+  title: 'CMS Admin',
+  description: 'Content Management System Admin Panel',
 };
 
-type LayoutProps = {
+export default async function RootLayout({
+  children,
+}: Readonly<{
   children: React.ReactNode;
-};
+}>) {
+  const user = await getSession();
 
-export default function RootLayout({ children }: LayoutProps) {
   return (
-    <html lang="zh-CN">
-      <body>
-        <div className="app-shell">
-          <AppHeader />
-          <main className="app-main">{children}</main>
-        </div>
+    <html lang="zh-CN" suppressHydrationWarning>
+      <body className={cn(inter.className, "bg-background text-foreground")}>
+        <ThemeProvider defaultTheme="light" storageKey="cms-theme">
+          <div className="flex h-screen overflow-hidden">
+            <AppSidebar className="hidden md:flex flex-shrink-0" user={user} />
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+              <ScrollArea className="flex-1">
+                <main className="p-6 md:p-8 max-w-7xl mx-auto w-full">
+                  {children}
+                </main>
+              </ScrollArea>
+            </div>
+          </div>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
 }
-

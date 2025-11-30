@@ -1,17 +1,24 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getAlbumById } from '@/lib/queries';
+import { getAlbumById, getAdjacentAlbums, getModels, getStudios } from '@/lib/data/albums';
 import { getAlbumImages } from '@/lib/album-images';
 import { getAlbumStoragePath } from '@/lib/config';
 import { formatDate } from '@/lib/utils';
 import { AlbumImagesGallery } from '@/components/album-images-gallery';
+import { BackButton } from '@/components/back-button';
+import { AlbumEditDialog } from '@/components/album-edit-dialog';
 import dynamic from 'next/dynamic';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExternalLink, Calendar, Image as ImageIcon, User, Building2, ChevronLeft, ChevronRight, Edit } from "lucide-react";
 
 const AlbumFetchButton = dynamic(() => import('@/components/album-fetch-button'));
 
 type PageProps = {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 };
+
 
 export default async function AlbumDetailPage({ params }: PageProps) {
     const resolvedParams = await params;
@@ -24,61 +31,139 @@ export default async function AlbumDetailPage({ params }: PageProps) {
         notFound();
     }
 
+    // 获取相邻图册
+    const { prevId, nextId } = await getAdjacentAlbums(albumId);
+
     // 获取图片列表
     const images = getAlbumImages(albumId);
     const storagePath = getAlbumStoragePath();
 
+    // 获取模特和工作室列表
+    const models = await getModels();
+    const studios = await getStudios();
+
     return (
-        <>
+        <div className="space-y-6">
             {/* 导航栏 */}
-            <div className="panel" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Link className="action-button" href="/albums/list">
-                    <i className="fas fa-arrow-left"></i> 返回列表
-                </Link>
+            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 border-b -mx-6 px-6 flex items-center justify-between">
+                <BackButton />
+
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" disabled={!prevId} asChild={!!prevId}>
+                        {prevId ? (
+                            <Link href={`/albums/${prevId}`}>
+                                <ChevronLeft className="mr-2 h-4 w-4" /> 上一个
+                            </Link>
+                        ) : (
+                            <span>
+                                <ChevronLeft className="mr-2 h-4 w-4" /> 上一个
+                            </span>
+                        )}
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href="/albums">
+                            <ImageIcon className="mr-2 h-4 w-4" /> 全部图册
+                        </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" disabled={!nextId} asChild={!!nextId}>
+                        {nextId ? (
+                            <Link href={`/albums/${nextId}`}>
+                                下一个 <ChevronRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        ) : (
+                            <span>
+                                下一个 <ChevronRight className="ml-2 h-4 w-4" />
+                            </span>
+                        )}
+                    </Button>
+                </div>
             </div>
 
             {/* 图册基本信息 */}
-            <section className="panel">
-                <div className="album-detail-header">
-                    <h1>{album.resource_title_raw}</h1>
-                    <div className="pill-list" style={{ marginTop: 12 }}>
-                        {album.model_name && <span className="pill">模特：{album.model_name}</span>}
-                        {album.studio_name && <span className="pill">机构：{album.studio_name}</span>}
-                        <span className="pill">创建时间：{formatDate(album.created_at)}</span>
-                        <span className="pill">图片数量：{images.length}</span>
-                    </div>
-
-                    {album.resource_url && (
-                        <div style={{ marginTop: 16 }}>
-                            <a
-                                href={album.resource_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="action-button"
-                            >
-                                <i className="fas fa-external-link-alt"></i> 查看原文
-                            </a>
+            <Card>
+                <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row gap-6">
+                        {/* 左侧封面 */}
+                        <div className="w-full md:w-48 flex-shrink-0">
+                            <div className="aspect-[2/3] relative rounded-lg overflow-hidden border bg-muted shadow-sm">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src={album.source_page_url}
+                                    alt={album.title || album.resource_title_raw}
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
                         </div>
-                    )}
 
-                    <div className="album-actions" style={{ marginTop: 16 }}>
-                        <AlbumFetchButton
-                            albumId={album.id}
-                            albumTitle={album.resource_title_raw}
-                        />
+                        {/* 右侧信息 */}
+                        <div className="flex-1 space-y-4">
+                            <div>
+                                <h1 className="text-2xl font-bold leading-tight mb-2">
+                                    {album.title || album.resource_title_raw}
+                                </h1>
+                                <div className="flex flex-wrap gap-2">
+                                    {album.model_name && (
+                                        <Badge variant="secondary" className="flex items-center gap-1">
+                                            <User className="h-3 w-3" /> {album.model_name}
+                                        </Badge>
+                                    )}
+                                    {album.studio_name && album.studio_id && album.studio_id > 0 ? (
+                                        <Link href={`/albums/studios/${album.studio_id}`}>
+                                            <Badge variant="outline" className="flex items-center gap-1 cursor-pointer hover:bg-accent transition-colors">
+                                                <Building2 className="h-3 w-3" /> {album.studio_name}
+                                            </Badge>
+                                        </Link>
+                                    ) : album.studio_name ? (
+                                        <Badge variant="outline" className="flex items-center gap-1">
+                                            <Building2 className="h-3 w-3" /> {album.studio_name}
+                                        </Badge>
+                                    ) : null}
+                                    <Badge variant="outline" className="flex items-center gap-1">
+                                        <Calendar className="h-3 w-3" /> {formatDate(album.created_at)}
+                                    </Badge>
+                                    <Badge variant="outline" className="flex items-center gap-1">
+                                        <ImageIcon className="h-3 w-3" /> {images.length} 张图片
+                                    </Badge>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2 pt-4">
+                                {album.resource_url && (
+                                    <Button variant="outline" size="sm" asChild>
+                                        <a
+                                            href={album.resource_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            <ExternalLink className="mr-2 h-4 w-4" /> 查看原文
+                                        </a>
+                                    </Button>
+                                )}
+                                <AlbumFetchButton
+                                    albumId={album.id}
+                                    albumTitle={album.title || album.resource_title_raw}
+                                />
+                                <AlbumEditDialog
+                                    album={album}
+                                    models={models}
+                                    studios={studios}
+                                />
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </CardContent>
+            </Card>
 
             {/* 图片画廊 */}
-            <section className="panel">
-                <h2>图片展示</h2>
-                <AlbumImagesGallery
-                    albumId={albumId}
-                    images={images}
-                    storagePath={storagePath}
-                />
-            </section>
-        </>
+            <Card>
+                <CardContent className="p-6">
+                    <AlbumImagesGallery
+                        albumId={albumId}
+                        images={images}
+                        storagePath={storagePath}
+                    />
+                </CardContent>
+            </Card>
+        </div>
     );
 }

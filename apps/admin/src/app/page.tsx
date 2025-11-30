@@ -1,16 +1,15 @@
 import Link from 'next/link';
-import { PaginationControls } from '@/components/pagination-controls';
-import { StatusPill } from '@/components/status-pill';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import TriggerButton from '@/components/trigger-button';
 import AnimatedNumber from '@/components/animated-number';
-import {
-  getBooks,
-  getDashboardStats,
-  getLatestChapters,
-  type BookListResponse,
-} from '@/lib/queries';
+import { getDashboardStats } from '@/lib/data/stats';
+import { getLatestChapters } from '@/lib/data/chapters';
+import { getBooks, type BookListResponse } from '@/lib/data/books';
 import { formatDate, formatNumber } from '@/lib/utils';
 import BooksTabsWrapper from '@/components/books-tabs-wrapper';
+import { BookOpen, FileText, ScrollText, Film, FileCheck } from 'lucide-react';
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -19,54 +18,65 @@ export const dynamic = 'force-dynamic';
 const normalizeParam = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value;
 
+const getStatusBadge = (status: number | null) => {
+  if (status === null) return <Badge variant="secondary">未知</Badge>;
+  if (status === 0) return <Badge variant="outline">待入库</Badge>;
+  if (status === 1) return <Badge variant="default">连载中</Badge>;
+  if (status === 2) return <Badge variant="secondary">已完结</Badge>;
+  return <Badge variant="secondary">其他</Badge>;
+};
+
 const renderBooksTable = (data: BookListResponse) => {
   if (!data.items.length) {
-    return <p className="muted">没有符合条件的书籍。</p>;
+    return <p className="text-muted-foreground text-center py-8">没有符合条件的书籍。</p>;
   }
 
   return (
-    <>
-      <table className="table">
+    <div className="rounded-md border">
+      <table className="w-full">
         <thead>
-          <tr>
-            <th>ID</th>
-            <th>书名</th>
-            <th>作者</th>
-            <th>来源</th>
-            <th>最新章节</th>
-            <th>章节数</th>
-            <th>状态</th>
-            <th>操作</th>
-            <th>入库时间</th>
+          <tr className="border-b bg-muted/50">
+            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">ID</th>
+            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">书名</th>
+            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">作者</th>
+            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">来源</th>
+            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">章节数</th>
+            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">状态</th>
+            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">操作</th>
+            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">入库时间</th>
           </tr>
         </thead>
         <tbody>
           {data.items.map((book) => (
-            <tr key={book.id}>
-              <td>
-                <span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>#{book.id}</span>
+            <tr key={book.id} className="border-b transition-colors hover:bg-muted/50">
+              <td className="p-4 align-middle">
+                <span className="text-sm font-semibold text-muted-foreground">#{book.id}</span>
               </td>
-              <td>
-                <Link className="table-row-link" href={`/books/${book.id}`}>
+              <td className="p-4 align-middle">
+                <Link
+                  href={`/books/${book.id}` as any}
+                  className="font-medium hover:underline"
+                >
                   {book.name}
                 </Link>
               </td>
-              <td>{book.author ?? '未知'}</td>
-              <td>{book.source ?? '—'}</td>
-              <td>{book.latestChapter ?? '—'}</td>
-              <td>{formatNumber(book.chapterCount)}</td>
-              <td>
-                <StatusPill status={book.status} />
+              <td className="p-4 align-middle text-sm">{book.author ?? '未知'}</td>
+              <td className="p-4 align-middle text-sm">{book.source ?? '—'}</td>
+              <td className="p-4 align-middle text-sm">{formatNumber(book.chapterCount)}</td>
+              <td className="p-4 align-middle">
+                {getStatusBadge(book.status)}
               </td>
-              <td>
+              <td className="p-4 align-middle">
                 {book.status === 0 ? <TriggerButton bookId={book.id} /> : null}
               </td>
-              <td>{formatDate(book.createdAt)}</td>
+              <td className="p-4 align-middle text-sm text-muted-foreground">
+                {formatDate(book.createdAt)}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
-    </>
+    </div>
   );
 };
 
@@ -95,102 +105,55 @@ export default async function Home({ searchParams }: any) {
     getLatestChapters(5),
   ]);
 
+  const statCards = [
+    { label: '书籍数量', value: stats.books, icon: BookOpen, color: 'text-blue-600' },
+    { label: '章节目录', value: stats.chapters, icon: FileText, color: 'text-green-600' },
+    { label: '章节正文', value: stats.contents, icon: ScrollText, color: 'text-purple-600' },
+    { label: '剧集脚本', value: stats.scripts, icon: Film, color: 'text-orange-600' },
+    { label: '整书摘要', value: stats.summaries, icon: FileCheck, color: 'text-pink-600' },
+  ];
+
   return (
-    <>
-      <section className="panel">
-        <h2>数据一览</h2>
-        <div className="stats-grid">
-          <article className="stat-card stat-books">
-            <p className="stat-label">书籍数量</p>
-            <p className="stat-value">
-              <AnimatedNumber value={stats.books} duration={1000} />
-            </p>
-          </article>
-          <article className="stat-card stat-directory">
-            <p className="stat-label">章节目录</p>
-            <p className="stat-value">
-              <AnimatedNumber value={stats.chapters} duration={1000} />
-            </p>
-          </article>
-          <article className="stat-card stat-contents">
-            <p className="stat-label">章节正文</p>
-            <p className="stat-value">
-              <AnimatedNumber value={stats.contents} duration={1000} />
-            </p>
-          </article>
-          <article className="stat-card stat-scripts">
-            <p className="stat-label">剧集脚本</p>
-            <p className="stat-value">
-              <AnimatedNumber value={stats.scripts} duration={1000} />
-            </p>
-          </article>
-          <article className="stat-card stat-summaries">
-            <p className="stat-label">整书摘要</p>
-            <p className="stat-value">
-              <AnimatedNumber value={stats.summaries} duration={1000} />
-            </p>
-          </article>
-        </div>
-      </section>
+    <div className="space-y-6">
+      {/* Statistics Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>数据一览</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            {statCards.map((stat) => (
+              <Card key={stat.label}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between space-x-4">
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {stat.label}
+                      </p>
+                      <p className="text-2xl font-bold">
+                        <AnimatedNumber value={stat.value} duration={1000} />
+                      </p>
+                    </div>
+                    <stat.icon className={`h-8 w-8 ${stat.color}`} />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* <section className="panel">
-        <h2>当前最新入库的章节</h2>
-        {latestChapters.length === 0 ? (
-          <p className="muted">暂无最近入库章节。</p>
-        ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>书籍ID</th>
-                <th>书名</th>
-                <th>章节名</th>
-                <th>入库时间</th>
-              </tr>
-            </thead>
-            <tbody>
-              {latestChapters.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>#{item.bookId}</span>
-                  </td>
-                  <td>
-                    <Link className="table-row-link" href={`/books/${item.bookId}`}>
-                      {item.bookName ?? '—'}
-                    </Link>
-                  </td>
-                  <td>
-                    <Link
-                      className="table-row-link"
-                      href={`/books/${item.bookId}/chapters/${item.id}`}
-                    >
-                      {item.chapterTitle ?? '—'}
-                    </Link>
-                  </td>
-                  <td>{formatDate(item.createdAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section> */}
-
-      <section className="panel">
-        {/* BookSearchForm query={query} source={source} minChapters={minChaptersParam ?? ''} */ }
-        {/* Client-side Tabs component - handles tab UI and partial fetch */}
-        <div style={{ marginTop: 12 }}>
-          {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
-          {/* Render client component */}
-          {/* It will fetch from /api/books and update only this area without full page refresh */}
-          {/* Import dynamically to avoid SSR issues */}
+      {/* Books List Section */}
+      <Card>
+        <CardContent className="pt-6">
           <BooksTabsWrapper
             initialTab={tabParam}
             initialQuery={query}
             initialSource={source}
             initialPage={page}
           />
-        </div>
-      </section>
-    </>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
-

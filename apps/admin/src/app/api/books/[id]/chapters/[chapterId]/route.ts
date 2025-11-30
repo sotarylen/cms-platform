@@ -3,11 +3,12 @@ import { getPool } from '@/lib/db';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; chapterId: string } }
+  { params }: { params: Promise<{ id: string; chapterId: string }> }
 ) {
   try {
-    const bookId = Number(params.id);
-    const chapterId = Number(params.chapterId);
+    const resolvedParams = await params;
+    const bookId = Number(resolvedParams.id);
+    const chapterId = Number(resolvedParams.chapterId);
     const body = await request.json();
 
     if (!bookId || isNaN(bookId)) {
@@ -47,11 +48,11 @@ export async function PATCH(
 
     values.push(chapterId);
     values.push(bookId); // 确保更新的是正确的书籍下的章节
-    
+
     const sql = `UPDATE n8n_book_chapters_content SET ${updates.join(', ')} WHERE id = ? AND book_id = ?`;
-    
+
     const [result]: any = await pool.query(sql, values);
-    
+
     // 检查是否有行被更新
     if (result.affectedRows === 0) {
       return NextResponse.json(
@@ -72,11 +73,12 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; chapterId: string } }
+  { params }: { params: Promise<{ id: string; chapterId: string }> }
 ) {
   try {
-    const bookId = Number(params.id);
-    const chapterId = Number(params.chapterId);
+    const resolvedParams = await params;
+    const bookId = Number(resolvedParams.id);
+    const chapterId = Number(resolvedParams.chapterId);
 
     if (!bookId || isNaN(bookId)) {
       return NextResponse.json(
@@ -93,11 +95,11 @@ export async function DELETE(
     }
 
     const pool = getPool();
-    
+
     // 删除章节
     const sql = `DELETE FROM n8n_book_chapters_content WHERE id = ? AND book_id = ?`;
     const [result]: any = await pool.query(sql, [chapterId, bookId]);
-    
+
     // 检查是否有行被删除
     if (result.affectedRows === 0) {
       return NextResponse.json(

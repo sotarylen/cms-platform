@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updateStudio } from '@/lib/queries';
+import { updateStudio } from '@/lib/data/albums';
 
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const resolvedParams = await params;
@@ -13,6 +13,7 @@ export async function PATCH(
         console.log(`[Studio Update API] Updating studio ${studioId}`, body);
 
         await updateStudio(studioId, {
+            studio_name: body.studio_name,
             studio_intro: body.studio_intro,
             studio_cover_url: body.studio_cover_url,
         });

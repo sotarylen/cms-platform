@@ -2,124 +2,170 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { AlbumCover } from '@/components/album-cover';
 import { StudioEditModal } from '@/components/studio-edit-modal';
 import type { Album, AlbumStudio } from '@/lib/types';
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card"
+import { ArrowLeft, Edit, ExternalLink } from "lucide-react"
+import { StudioLogo } from '@/components/studio-logo';
+import { Pagination } from '@/components/pagination';
+import { formatDate } from '@/lib/utils';
 
 type Props = {
     studio: AlbumStudio;
     albums: Album[];
+    total: number;
+    page: number;
+    pageSize: number;
 };
 
-export function StudioDetailClient({ studio: initialStudio, albums }: Props) {
+export function StudioDetailClient({ studio: initialStudio, albums, total, page, pageSize }: Props) {
     const [studio, setStudio] = useState(initialStudio);
     const [showEditModal, setShowEditModal] = useState(false);
+    const router = useRouter();
 
     const handleEditSuccess = () => {
         setShowEditModal(false);
-        // Refresh the page to get updated data
         window.location.reload();
     };
 
+    const handlePageChange = (newPage: number) => {
+        router.push(`/albums/studios/${studio.studio_id}?page=${newPage}&pageSize=${pageSize}`);
+    };
+
+    const handlePageSizeChange = (newPageSize: number) => {
+        router.push(`/albums/studios/${studio.studio_id}?page=1&pageSize=${newPageSize}`);
+    };
+
     return (
-        <>
+        <div className="space-y-6">
             {/* Navigation */}
-            <div className="panel" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Link className="action-button" href="/albums/list">
-                    <i className="fas fa-arrow-left"></i> 返回列表
-                </Link>
-                <button className="action-button" onClick={() => setShowEditModal(true)}>
-                    <i className="fas fa-edit"></i> 编辑工作室
-                </button>
+            <div className="flex items-center justify-between">
+                <Button variant="ghost" asChild className="pl-0">
+                    <Link href="/albums/studios">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        返回列表
+                    </Link>
+                </Button>
+                <Button onClick={() => setShowEditModal(true)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    编辑工作室
+                </Button>
             </div>
 
             {/* Studio Information */}
-            <section className="panel">
-                {studio.studio_cover_url && (
-                    <div style={{ marginBottom: 24 }}>
-                        <img
-                            src={studio.studio_cover_url}
-                            alt={studio.studio_name}
-                            style={{
-                                width: '100%',
-                                maxHeight: 300,
-                                objectFit: 'cover',
-                                borderRadius: 8,
-                            }}
-                        />
-                    </div>
-                )}
+            <Card className="w-full">
+                <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row gap-6 items-start">
+                        <div className="flex-shrink-0">
+                            <StudioLogo
+                                coverUrl={studio.studio_cover_url || null}
+                                studioName={studio.studio_name}
+                                size="lg"
+                            />
+                        </div>
+                        <div className="flex-1 space-y-4">
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-3">
+                                    <h1 className="text-2xl font-bold">{studio.studio_name}</h1>
+                                    <Badge variant="outline" className="font-mono">ID: {studio.studio_id}</Badge>
+                                </div>
+                                {studio.studio_url && (
+                                    <a
+                                        href={studio.studio_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
+                                    >
+                                        <ExternalLink className="mr-1 h-3 w-3" />
+                                        访问官网
+                                    </a>
+                                )}
+                            </div>
 
-                <h1>{studio.studio_name}</h1>
-                <div className="pill-list" style={{ marginTop: 12 }}>
-                    <span className="pill">工作室 ID: {studio.studio_id}</span>
-                    {studio.studio_url && (
-                        <a
-                            href={studio.studio_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="pill"
-                            style={{ cursor: 'pointer' }}
-                        >
-                            <i className="fas fa-external-link-alt"></i> 官网
-                        </a>
-                    )}
-                </div>
-
-                {studio.studio_intro && (
-                    <div style={{ marginTop: 16 }}>
-                        <h3>工作室简介</h3>
-                        <p className="muted" style={{ marginTop: 8, lineHeight: 1.6 }}>
-                            {studio.studio_intro}
-                        </p>
+                            {studio.studio_intro ? (
+                                <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed max-w-4xl">
+                                    {studio.studio_intro}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground italic">暂无简介</p>
+                            )}
+                        </div>
                     </div>
-                )}
-            </section>
+                </CardContent>
+            </Card>
 
             {/* Studio Albums */}
-            <section className="panel">
-                <h2>工作室图册 ({albums.length})</h2>
+            <Card className="w-full">
+                <CardHeader>
+                    <CardTitle>工作室图册 ({total})</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {albums.length === 0 ? (
+                        <div className="flex h-[200px] items-center justify-center rounded-md border border-dashed">
+                            <p className="text-muted-foreground">该工作室暂无图册</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                                {albums.map((album) => (
+                                    <Card key={album.id} className="overflow-hidden group">
+                                        <Link href={`/albums/${album.id}`}>
+                                            <div className="aspect-[2/3] overflow-hidden bg-muted relative">
+                                                <AlbumCover
+                                                    src={album.source_page_url || ''}
+                                                    alt={album.resource_title_raw}
+                                                    className="h-full w-full object-cover transition-all group-hover:scale-105"
+                                                />
+                                                {album.model_name && (
+                                                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2 text-white text-xs truncate">
+                                                        {album.model_name}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </Link>
+                                        <CardContent className="p-3 space-y-1">
+                                            <h3 className="font-medium text-sm truncate" title={album.resource_title_raw}>
+                                                <Link href={`/albums/${album.id}`} className="hover:underline">
+                                                    {album.resource_title_raw}
+                                                </Link>
+                                            </h3>
+                                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                <span>#{album.id}</span>
+                                                <span>{formatDate(album.created_at)}</span>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
 
-                {albums.length === 0 ? (
-                    <p className="muted">该工作室暂无图册</p>
-                ) : (
-                    <div className="album-grid" style={{ marginTop: 16 }}>
-                        {albums.map((album) => (
-                            <Link
-                                key={album.id}
-                                href={`/albums/${album.id}`}
-                                className="album-card-link"
-                            >
-                                <div className="album-card">
-                                    <div className="album-cover">
-                                        <AlbumCover
-                                            src={album.source_page_url}
-                                            alt={album.resource_title_raw}
-                                        />
-                                    </div>
-                                    <div className="album-info">
-                                        <h3 className="album-title">{album.resource_title_raw}</h3>
-                                        <div className="album-meta">
-                                            {album.model_name && (
-                                                <span className="muted">{album.model_name}</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                )}
-            </section>
+                            <Pagination
+                                total={total}
+                                page={page}
+                                pageSize={pageSize}
+                                onPageChange={handlePageChange}
+                                onPageSizeChange={handlePageSizeChange}
+                            />
+                        </>
+                    )}
+                </CardContent>
+            </Card>
 
             {/* Edit Modal */}
-            {showEditModal && (
-                <StudioEditModal
-                    studio={studio}
-                    onClose={() => setShowEditModal(false)}
-                    onSuccess={handleEditSuccess}
-                />
-            )}
-        </>
+            <StudioEditModal
+                studio={studio}
+                open={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                onSuccess={handleEditSuccess}
+            />
+        </div>
     );
 }

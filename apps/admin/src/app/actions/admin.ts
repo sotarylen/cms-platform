@@ -27,3 +27,35 @@ export async function deleteUserAction(userId: number) {
         return { success: false, error: '删除用户失败' };
     }
 }
+
+export async function createUserAction(data: any) {
+    try {
+        await requireAdmin();
+        const { createUser, usernameExists } = await import('@/lib/auth');
+
+        if (await usernameExists(data.username)) {
+            return { success: false, error: '用户名已存在' };
+        }
+
+        await createUser(data);
+        revalidatePath('/users');
+        return { success: true };
+    } catch (error) {
+        console.error('Create user error:', error);
+        return { success: false, error: '创建用户失败' };
+    }
+}
+
+export async function updateUserAction(userId: number, data: any) {
+    try {
+        await requireAdmin();
+        const { updateUser } = await import('@/lib/auth');
+
+        await updateUser(userId, data);
+        revalidatePath('/users');
+        return { success: true };
+    } catch (error) {
+        console.error('Update user error:', error);
+        return { success: false, error: '更新用户失败' };
+    }
+}

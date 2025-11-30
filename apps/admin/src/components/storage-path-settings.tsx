@@ -2,6 +2,10 @@
 
 import { useState } from 'react';
 import { updateAlbumStoragePathAction } from '@/app/actions/settings';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 type Props = {
     initialPath: string;
@@ -9,69 +13,64 @@ type Props = {
 
 export function StoragePathSettings({ initialPath }: Props) {
     const [path, setPath] = useState(initialPath);
+    const [backupPath, setBackupPath] = useState('');
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('');
 
     const handleSave = async () => {
         setLoading(true);
-        setMessage('');
 
         const result = await updateAlbumStoragePathAction(path);
 
         if (result.success) {
-            setMessage('保存成功');
-            setTimeout(() => setMessage(''), 3000);
+            toast.success('保存成功');
         } else {
-            setMessage(`错误：${result.error}`);
+            toast.error(result.error || '保存失败');
         }
 
         setLoading(false);
     };
 
     return (
-        <div className="storage-path-settings">
-            <h3>图册存储路径</h3>
-            <p className="muted" style={{ marginBottom: 16 }}>
-                设置图册图片的本地存储路径。图片将按图册ID创建子文件夹存储。
-            </p>
-
-            <div className="form-group">
-                <label>存储路径</label>
-                <input
+        <div className="space-y-6">
+            {/* Configuration Item 1 */}
+            <div className="grid grid-cols-[200px_1fr_300px] gap-4 items-start">
+                <Label htmlFor="storage-path" className="pt-2">图册存储路径</Label>
+                <Input
+                    id="storage-path"
                     type="text"
                     value={path}
                     onChange={(e) => setPath(e.target.value)}
                     placeholder="/path/to/albums"
-                    style={{ fontFamily: 'monospace' }}
+                    className="font-mono"
                 />
-                <small className="muted">
-                    示例：/Users/username/albums 或 /var/www/albums
-                </small>
+                <p className="text-sm text-muted-foreground pt-2">
+                    图片按图册ID创建子文件夹存储
+                </p>
             </div>
 
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <button
-                    onClick={handleSave}
-                    disabled={loading}
-                    className="action-button action-button-primary"
-                >
+            {/* Configuration Item 2 (Example) */}
+            <div className="grid grid-cols-[200px_1fr_300px] gap-4 items-start">
+                <Label htmlFor="backup-path" className="pt-2">备份存储路径</Label>
+                <Input
+                    id="backup-path"
+                    type="text"
+                    value={backupPath}
+                    onChange={(e) => setBackupPath(e.target.value)}
+                    placeholder="/path/to/backup"
+                    className="font-mono"
+                />
+                <p className="text-sm text-muted-foreground pt-2">
+                    可选，留空则不启用备份功能
+                </p>
+            </div>
+
+            {/* Save Button */}
+            <div className="grid grid-cols-[200px_1fr_300px] gap-4">
+                <div></div>
+                <Button onClick={handleSave} disabled={loading} className="w-fit">
                     {loading ? '保存中...' : '保存'}
-                </button>
-                {message && (
-                    <span className={message.includes('错误') ? 'text-danger' : 'text-success'}>
-                        {message}
-                    </span>
-                )}
-            </div>
-
-            <div className="info-box" style={{ marginTop: 24 }}>
-                <h4>路径结构说明</h4>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                    图片存储结构：<code>{path}/[albumId]/image001.jpg</code>
-                </p>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
-                    例如：图册123的图片将存储在 <code>{path}/123/</code> 文件夹中
-                </p>
+                </Button>
+                <div></div>
             </div>
         </div>
     );

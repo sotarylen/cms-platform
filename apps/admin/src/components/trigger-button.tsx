@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Download, Loader2 } from 'lucide-react';
 
 interface TriggerButtonProps {
   bookId?: number;
@@ -10,7 +12,7 @@ interface TriggerButtonProps {
   disabled?: boolean;
 }
 
-const TriggerButton: React.FC<TriggerButtonProps> = ({ 
+const TriggerButton: React.FC<TriggerButtonProps> = ({
   bookId,
   onClick,
   children = '抓取章节',
@@ -28,7 +30,7 @@ const TriggerButton: React.FC<TriggerButtonProps> = ({
 
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch(`/api/books/${bookId}/fetch`, {
         method: 'POST',
@@ -38,11 +40,11 @@ const TriggerButton: React.FC<TriggerButtonProps> = ({
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.message || '抓取失败');
       }
-      
+
       // 显示成功消息
       alert(result.message || '已成功触发章节抓取任务');
     } catch (err: any) {
@@ -54,21 +56,27 @@ const TriggerButton: React.FC<TriggerButtonProps> = ({
   };
 
   return (
-    <>
-      <button
+    <div className="inline-flex flex-col items-start">
+      <Button
+        variant="outline"
+        size="sm"
         onClick={handleClick}
         disabled={disabled || isLoading}
-        className={`action-button ${className}`}
+        className={className}
       >
-        <i className="fas fa-download"></i>
+        {isLoading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Download className="mr-2 h-4 w-4" />
+        )}
         {isLoading ? '抓取中...' : children}
-      </button>
+      </Button>
       {error && (
-        <div className="text-red-500 text-sm mt-1">
+        <div className="text-red-500 text-xs mt-1">
           错误: {error}
         </div>
       )}
-    </>
+    </div>
   );
 };
 

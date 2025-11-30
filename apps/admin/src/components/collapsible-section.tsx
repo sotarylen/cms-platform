@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 type Props = {
   title: string;
@@ -20,25 +23,29 @@ export function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <section className="panel collapsible">
-      <div className="collapsible-header">
-        <button
-          type="button"
-          className="collapsible-trigger"
-          onClick={() => setOpen((prev) => !prev)}
-          aria-expanded={open}
-        >
-          <div>
-            <h3>{title}</h3>
-            {subtitle && <p className="muted">{subtitle}</p>}
-          </div>
-          <span className="chevron" data-open={open}>
-            <i className={`fas fa-chevron-${open ? 'up' : 'down'}`}></i>
-          </span>
-        </button>
-        {actions && <div className="collapsible-actions">{actions}</div>}
-      </div>
-      {open && <div className="collapsible-content">{children}</div>}
-    </section>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            className="flex-1 flex items-center justify-between text-left"
+            onClick={() => setOpen((prev) => !prev)}
+            aria-expanded={open}
+          >
+            <div className="space-y-1">
+              <CardTitle>{title}</CardTitle>
+              {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+            </div>
+            {open ? (
+              <ChevronUp className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+            )}
+          </button>
+          {actions && <div className="ml-4">{actions}</div>}
+        </div>
+      </CardHeader>
+      {open && <CardContent>{children}</CardContent>}
+    </Card>
   );
 }

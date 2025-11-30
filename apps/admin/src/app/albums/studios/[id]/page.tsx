@@ -1,14 +1,18 @@
 import { notFound } from 'next/navigation';
-import { getStudioById, getAlbumsByStudio } from '@/lib/queries';
+import { getStudioById, getAlbumsByStudio } from '@/lib/data/albums';
 import { StudioDetailClient } from '@/components/studio-detail-client';
 
 type PageProps = {
-    params: { id: string };
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ page?: string; pageSize?: string }>;
 };
 
-export default async function StudioDetailPage({ params }: PageProps) {
+export default async function StudioDetailPage({ params, searchParams }: PageProps) {
     const resolvedParams = await params;
+    const resolvedSearchParams = await searchParams;
     const studioId = Number(resolvedParams.id);
+    const page = Number(resolvedSearchParams.page) || 1;
+    const pageSize = Number(resolvedSearchParams.pageSize) || 30;
 
     const studio = await getStudioById(studioId);
 
@@ -16,7 +20,15 @@ export default async function StudioDetailPage({ params }: PageProps) {
         notFound();
     }
 
-    const albums = await getAlbumsByStudio(studioId);
+    const { items: albums, total } = await getAlbumsByStudio(studioId, { page, pageSize });
 
-    return <StudioDetailClient studio={studio} albums={albums} />;
+    return (
+        <StudioDetailClient
+            studio={studio}
+            albums={albums}
+            total={total}
+            page={page}
+            pageSize={pageSize}
+        />
+    );
 }

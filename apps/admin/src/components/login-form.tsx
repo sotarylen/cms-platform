@@ -3,6 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loginAction } from '@/app/actions/auth';
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
 
 export function LoginForm() {
     const router = useRouter();
@@ -28,10 +33,10 @@ export function LoginForm() {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group">
-                <label htmlFor="username">用户名</label>
-                <input
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="username">用户名</Label>
+                <Input
                     id="username"
                     type="text"
                     value={username}
@@ -39,12 +44,13 @@ export function LoginForm() {
                     required
                     disabled={loading}
                     autoComplete="username"
+                    placeholder="请输入用户名"
                 />
             </div>
 
-            <div className="form-group">
-                <label htmlFor="password">密码</label>
-                <input
+            <div className="space-y-2">
+                <Label htmlFor="password">密码</Label>
+                <Input
                     id="password"
                     type="password"
                     value={password}
@@ -52,14 +58,20 @@ export function LoginForm() {
                     required
                     disabled={loading}
                     autoComplete="current-password"
+                    placeholder="请输入密码"
                 />
             </div>
 
-            {error && <div className="auth-error">{error}</div>}
+            {error && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
 
-            <button type="submit" className="auth-submit" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? '登录中...' : '登录'}
-            </button>
+            </Button>
         </form>
     );
 }

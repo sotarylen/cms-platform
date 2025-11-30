@@ -2,6 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, Save, Trash2 } from 'lucide-react';
 
 type ChapterEditModalProps = {
   chapter: {
@@ -10,10 +22,11 @@ type ChapterEditModalProps = {
     sortOrder: number | null;
   };
   bookId: number;
+  open: boolean;
   onClose: () => void;
 };
 
-export function ChapterEditModal({ chapter, bookId, onClose }: ChapterEditModalProps) {
+export function ChapterEditModal({ chapter, bookId, open, onClose }: ChapterEditModalProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -23,18 +36,16 @@ export function ChapterEditModal({ chapter, bookId, onClose }: ChapterEditModalP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isSubmitting) return;
-    
+
     setIsSubmitting(true);
 
     try {
-      // 构造要发送的数据
       const payload: any = {
         chapter_title: formData.title || null,
       };
 
-      // 只有当用户输入了排序号时才更新
       if (formData.sortOrder.trim() !== '') {
         const sortOrder = parseInt(formData.sortOrder, 10);
         if (!isNaN(sortOrder)) {
@@ -81,7 +92,7 @@ export function ChapterEditModal({ chapter, bookId, onClose }: ChapterEditModalP
 
     try {
       setIsSubmitting(true);
-      
+
       const res = await fetch(`/api/books/${bookId}/chapters/${chapter.id}`, {
         method: 'DELETE',
       });
@@ -109,81 +120,84 @@ export function ChapterEditModal({ chapter, bookId, onClose }: ChapterEditModalP
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>编辑章节信息</h2>
-          <div className="modal-header-actions">
-            <button
-              type="button"
-              className="action-button"
-              onClick={onClose}
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>编辑章节信息</DialogTitle>
+          <DialogDescription>
+            修改章节标题和排序号
+          </DialogDescription>
+        </DialogHeader>
+        <form id="chapter-edit-form" onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">章节标题</Label>
+            <Input
+              id="title"
+              type="text"
+              value={formData.title}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
+              placeholder="请输入章节标题"
               disabled={isSubmitting}
-            >
-              <i className="fas fa-times"></i>
-              取消
-            </button>
-            <button
-              type="button"
-              className="action-button danger"
-              onClick={handleDelete}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? '删除中...' : (
-                <>
-                  <i className="fas fa-trash"></i>
-                  删除章节
-                </>
-              )}
-            </button>
-            <button
-              type="submit"
-              form="chapter-edit-form"
-              className="modal-save"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? '保存中...' : (
-                <>
-                  <i className="fas fa-save"></i>
-                  保存
-                </>
-              )}
-            </button>
+            />
           </div>
-        </div>
-        <div className="modal-body">
-          <form id="chapter-edit-form" onSubmit={handleSubmit} className="book-edit-form">
-            <div className="form-group">
-              <label htmlFor="title">章节标题</label>
-              <input
-                id="title"
-                type="text"
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
-                placeholder="请输入章节标题"
-              />
-            </div>
 
-            <div className="form-group">
-              <label htmlFor="sortOrder">章节顺序号</label>
-              <input
-                id="sortOrder"
-                type="number"
-                value={formData.sortOrder}
-                onChange={(e) =>
-                  setFormData({ ...formData, sortOrder: e.target.value })
-                }
-                placeholder="请输入章节顺序号"
-              />
-              <p className="form-help-text">
-                章节将按顺序号升序排列，留空则按ID排序
-              </p>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+          <div className="space-y-2">
+            <Label htmlFor="sortOrder">章节顺序号</Label>
+            <Input
+              id="sortOrder"
+              type="number"
+              value={formData.sortOrder}
+              onChange={(e) =>
+                setFormData({ ...formData, sortOrder: e.target.value })
+              }
+              placeholder="请输入章节顺序号"
+              disabled={isSubmitting}
+            />
+            <p className="text-sm text-muted-foreground">
+              章节将按顺序号升序排列，留空则按ID排序
+            </p>
+          </div>
+        </form>
+        <DialogFooter className="gap-2">
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                删除中...
+              </>
+            ) : (
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                删除章节
+              </>
+            )}
+          </Button>
+          <Button
+            type="submit"
+            form="chapter-edit-form"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                保存中...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                保存
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

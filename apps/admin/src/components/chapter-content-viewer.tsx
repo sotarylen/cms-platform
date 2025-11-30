@@ -2,6 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import {
+  Minus,
+  Plus,
+  Moon,
+  Book,
+  Sun,
+  Leaf,
+  Droplet,
+  Star,
+  SunMoon,
+  ChevronLeft,
+  ChevronRight,
+  List
+} from 'lucide-react';
 
 const MIN_SIZE = 16;
 const MAX_SIZE = 32;
@@ -17,7 +31,7 @@ const FONT_FAMILIES = [
   { value: '', label: '默认字体' },
   { value: 'SimSun, Songti SC, serif', label: '宋体' },
   { value: 'SimHei, Heiti SC, sans-serif', label: '黑体' },
-  { value: 'KaiTi, Kaiti SC, cursive', label: '楷体' }, 
+  { value: 'KaiTi, Kaiti SC, cursive', label: '楷体' },
   { value: 'FangSong, Fangsong SC, serif', label: '仿宋' },
   { value: 'Microsoft YaHei, PingFang SC, sans-serif', label: '微软雅黑' },
   { value: 'STHeiti, Heiti TC, sans-serif', label: '华文黑体' },
@@ -32,7 +46,7 @@ type Props = {
   nextChapterTitle?: string;
 };
 
-export function ChapterContentViewer({ 
+export function ChapterContentViewer({
   content,
   prevChapterHref,
   nextChapterHref,
@@ -45,7 +59,7 @@ export function ChapterContentViewer({
   const [bgColor, setBgColor] = useState<string>('dark');
   const [fontFamily, setFontFamily] = useState<string>('');
   const [loaded, setLoaded] = useState<boolean>(false);
-  
+
   // 在hydration完成后从localStorage加载用户设置
   useEffect(() => {
     const loadSettings = () => {
@@ -53,26 +67,26 @@ export function ChapterContentViewer({
         const savedFontSize = localStorage.getItem(FONT_SIZE_KEY);
         const savedBgColor = localStorage.getItem(BACKGROUND_COLOR_KEY);
         const savedFontFamily = localStorage.getItem(FONT_FAMILY_KEY);
-        
+
         // 只有当本地存储中有值时才更新状态，否则保持默认状态
         if (savedFontSize !== null) {
           setFontSize(parseInt(savedFontSize, 10));
         }
-        
+
         if (savedBgColor !== null) {
           setBgColor(savedBgColor);
         }
-        
+
         // 确保即使 savedFontFamily 为 '' 也更新状态
         if (savedFontFamily !== null) {
           setFontFamily(savedFontFamily);
         }
       }
     };
-    
+
     loadSettings();
     setLoaded(true);
-    
+
     // 监听storage事件，当其他标签页更改设置时同步更新
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === FONT_SIZE_KEY && e.newValue !== null) {
@@ -83,9 +97,9 @@ export function ChapterContentViewer({
         setFontFamily(e.newValue);
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
@@ -97,16 +111,16 @@ export function ChapterContentViewer({
       const savedFontSize = localStorage.getItem(FONT_SIZE_KEY);
       const savedBgColor = localStorage.getItem(BACKGROUND_COLOR_KEY);
       const savedFontFamily = localStorage.getItem(FONT_FAMILY_KEY);
-      
+
       // 只有当本地存储中有值时才更新状态，否则保持当前状态
       if (savedFontSize !== null) {
         setFontSize(parseInt(savedFontSize, 10));
       }
-      
+
       if (savedBgColor !== null) {
         setBgColor(savedBgColor);
       }
-      
+
       // 字体设置也遵循同样的规则，确保即使为 '' 也更新
       if (savedFontFamily !== null) {
         setFontFamily(savedFontFamily);
@@ -151,126 +165,128 @@ export function ChapterContentViewer({
   return (
     <div className="reader">
       <div className="reader-toolbar">
-        <div className="reader-toolbar-group">
-          <div className="reader-toolbar-buttons">
-            <button
-              type="button"
-              onClick={() => setSize(fontSize - STEP)}
-              disabled={fontSize <= MIN_SIZE}
-              title="减小字号"
-            >
-              <i className="fas fa-minus"></i>
-            </button>
-            <span className="reader-toolbar-label">{fontSize}px</span>
-            <button
-              type="button"
-              onClick={() => setSize(fontSize + STEP)}
-              disabled={fontSize >= MAX_SIZE}
-              title="增大字号"
-            >
-              <i className="fas fa-plus"></i>
-            </button>
+        <div className="px-6 py-4 flex flex-wrap items-center gap-4 justify-between">
+          <div className="reader-toolbar-group">
+            <div className="reader-toolbar-buttons">
+              <button
+                type="button"
+                onClick={() => setSize(fontSize - STEP)}
+                disabled={fontSize <= MIN_SIZE}
+                title="减小字号"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+              <span className="reader-toolbar-label">{fontSize}px</span>
+              <button
+                type="button"
+                onClick={() => setSize(fontSize + STEP)}
+                disabled={fontSize >= MAX_SIZE}
+                title="增大字号"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-        </div>
-        
-        <div className="reader-toolbar-group">
-          <span className="reader-toolbar-label">选择字体</span>
-          <select 
-            className="font-select"
-            value={fontFamily}
-            onChange={(e) => setFont(e.target.value)}
-            title="选择字体"
-          >
-            {FONT_FAMILIES.map((font) => (
-              <option key={font.value} value={font.value}>
-                {font.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="reader-toolbar-group">
-          <div className="reader-toolbar-buttons">
-            <button
-              type="button"
-              className={bgColor === 'dark' ? 'active' : ''}
-              onClick={() => setBackground('dark')}
-              title="深色背景"
+
+          <div className="reader-toolbar-group">
+            <span className="reader-toolbar-label">选择字体</span>
+            <select
+              className="font-select"
+              value={fontFamily}
+              onChange={(e) => setFont(e.target.value)}
+              title="选择字体"
             >
-              <i className="fas fa-moon"></i>
-            </button>
-            <button
-              type="button"
-              className={bgColor === 'sepia' ? 'active' : ''}
-              onClick={() => setBackground('sepia')}
-              title="复古背景"
-            >
-              <i className="fas fa-book"></i>
-            </button>
-            <button
-              type="button"
-              className={bgColor === 'light' ? 'active' : ''}
-              onClick={() => setBackground('light')}
-              title="浅色背景"
-            >
-              <i className="fas fa-sun"></i>
-            </button>
-            <button
-              type="button"
-              className={bgColor === 'green' ? 'active' : ''}
-              onClick={() => setBackground('green')}
-              title="绿色背景"
-            >
-              <i className="fas fa-leaf"></i>
-            </button>
-            <button
-              type="button"
-              className={bgColor === 'blue' ? 'active' : ''}
-              onClick={() => setBackground('blue')}
-              title="蓝色背景"
-            >
-              <i className="fas fa-tint"></i>
-            </button>
-            <button
-              type="button"
-              className={bgColor === 'night' ? 'active' : ''}
-              onClick={() => setBackground('night')}
-              title="夜间背景"
-            >
-              <i className="fas fa-star"></i>
-            </button>
-            <button
-              type="button"
-              className={bgColor === 'contrast' ? 'active' : ''}
-              onClick={() => setBackground('contrast')}
-              title="高对比度"
-            >
-              <i className="fas fa-adjust"></i>
-            </button>
+              {FONT_FAMILIES.map((font) => (
+                <option key={font.value} value={font.value}>
+                  {font.label}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
-        <div className="reader-toolbar-group">
-          {prevChapterHref ? (
-            <Link href={prevChapterHref} className="action-button" title={prevChapterTitle || "上一章"}>
-              <i className="fas fa-arrow-left"></i> 上一章
+
+          <div className="reader-toolbar-group">
+            <div className="reader-toolbar-buttons">
+              <button
+                type="button"
+                className={bgColor === 'dark' ? 'active' : ''}
+                onClick={() => setBackground('dark')}
+                title="深色背景"
+              >
+                <Moon className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className={bgColor === 'sepia' ? 'active' : ''}
+                onClick={() => setBackground('sepia')}
+                title="复古背景"
+              >
+                <Book className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className={bgColor === 'light' ? 'active' : ''}
+                onClick={() => setBackground('light')}
+                title="浅色背景"
+              >
+                <Sun className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className={bgColor === 'green' ? 'active' : ''}
+                onClick={() => setBackground('green')}
+                title="绿色背景"
+              >
+                <Leaf className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className={bgColor === 'blue' ? 'active' : ''}
+                onClick={() => setBackground('blue')}
+                title="蓝色背景"
+              >
+                <Droplet className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className={bgColor === 'night' ? 'active' : ''}
+                onClick={() => setBackground('night')}
+                title="夜间背景"
+              >
+                <Star className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className={bgColor === 'contrast' ? 'active' : ''}
+                onClick={() => setBackground('contrast')}
+                title="高对比度"
+              >
+                <SunMoon className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <div className="reader-toolbar-group">
+            {prevChapterHref ? (
+              <Link href={prevChapterHref as any} className="action-button" title={prevChapterTitle || "上一章"}>
+                <ChevronLeft className="h-4 w-4" /> 上一章
+              </Link>
+            ) : (
+              <span className="action-button disabled">
+                <ChevronLeft className="h-4 w-4" /> 上一章
+              </span>
+            )}
+            <Link href={bookHref as any} className="action-button">
+              <List className="h-4 w-4" /> 返回目录
             </Link>
-          ) : (
-            <span className="action-button disabled">
-              <i className="fas fa-arrow-left"></i> 上一章
-            </span>
-          )}
-          <Link href={bookHref} className="action-button">
-            <i className="fas fa-book"></i> 返回目录
-          </Link>
-          {nextChapterHref ? (
-            <Link href={nextChapterHref} className="action-button" title={nextChapterTitle || "下一章"}>
-              下一章 <i className="fas fa-arrow-right"></i>
-            </Link>
-          ) : (
-            <span className="action-button disabled">
-              下一章 <i className="fas fa-arrow-right"></i>
-            </span>
-          )}
+            {nextChapterHref ? (
+              <Link href={nextChapterHref as any} className="action-button" title={nextChapterTitle || "下一章"}>
+                下一章 <ChevronRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <span className="action-button disabled">
+                下一章 <ChevronRight className="h-4 w-4" />
+              </span>
+            )}
+          </div>
         </div>
       </div>
       <article
@@ -284,125 +300,127 @@ export function ChapterContentViewer({
         {content}
       </article>
       <div className="reader-toolbar reader-toolbar-bottom">
-        <div className="reader-toolbar-group">
-          <div className="reader-toolbar-buttons">
-            <button
-              type="button"
-              onClick={() => setSize(fontSize - STEP)}
-              disabled={fontSize <= MIN_SIZE}
-              title="减小字号"
-            >
-              <i className="fas fa-minus"></i>
-            </button>
-            <span className="reader-toolbar-label">{fontSize}px</span>
-            <button
-              type="button"
-              onClick={() => setSize(fontSize + STEP)}
-              disabled={fontSize >= MAX_SIZE}
-              title="增大字号"
-            >
-              <i className="fas fa-plus"></i>
-            </button>
+        <div className="px-6 py-4 flex flex-wrap items-center gap-4 justify-between">
+          <div className="reader-toolbar-group">
+            <div className="reader-toolbar-buttons">
+              <button
+                type="button"
+                onClick={() => setSize(fontSize - STEP)}
+                disabled={fontSize <= MIN_SIZE}
+                title="减小字号"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+              <span className="reader-toolbar-label">{fontSize}px</span>
+              <button
+                type="button"
+                onClick={() => setSize(fontSize + STEP)}
+                disabled={fontSize >= MAX_SIZE}
+                title="增大字号"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-        </div>
-        
-        <div className="reader-toolbar-group">
-          <select 
-            className="font-select"
-            value={fontFamily}
-            onChange={(e) => setFont(e.target.value)}
-            title="选择字体"
-          >
-            {FONT_FAMILIES.map((font) => (
-              <option key={font.value} value={font.value}>
-                {font.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="reader-toolbar-group">
-          <div className="reader-toolbar-buttons">
-            <button
-              type="button"
-              className={bgColor === 'dark' ? 'active' : ''}
-              onClick={() => setBackground('dark')}
-              title="深色背景"
+
+          <div className="reader-toolbar-group">
+            <select
+              className="font-select"
+              value={fontFamily}
+              onChange={(e) => setFont(e.target.value)}
+              title="选择字体"
             >
-              <i className="fas fa-moon"></i>
-            </button>
-            <button
-              type="button"
-              className={bgColor === 'sepia' ? 'active' : ''}
-              onClick={() => setBackground('sepia')}
-              title="复古背景"
-            >
-              <i className="fas fa-book"></i>
-            </button>
-            <button
-              type="button"
-              className={bgColor === 'light' ? 'active' : ''}
-              onClick={() => setBackground('light')}
-              title="浅色背景"
-            >
-              <i className="fas fa-sun"></i>
-            </button>
-            <button
-              type="button"
-              className={bgColor === 'green' ? 'active' : ''}
-              onClick={() => setBackground('green')}
-              title="绿色背景"
-            >
-              <i className="fas fa-leaf"></i>
-            </button>
-            <button
-              type="button"
-              className={bgColor === 'blue' ? 'active' : ''}
-              onClick={() => setBackground('blue')}
-              title="蓝色背景"
-            >
-              <i className="fas fa-tint"></i>
-            </button>
-            <button
-              type="button"
-              className={bgColor === 'night' ? 'active' : ''}
-              onClick={() => setBackground('night')}
-              title="夜间背景"
-            >
-              <i className="fas fa-star"></i>
-            </button>
-            <button
-              type="button"
-              className={bgColor === 'contrast' ? 'active' : ''}
-              onClick={() => setBackground('contrast')}
-              title="高对比度"
-            >
-              <i className="fas fa-adjust"></i>
-            </button>
+              {FONT_FAMILIES.map((font) => (
+                <option key={font.value} value={font.value}>
+                  {font.label}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
-        <div className="reader-toolbar-group">
-          {prevChapterHref ? (
-            <Link href={prevChapterHref} className="action-button" title={prevChapterTitle || "上一章"}>
-              <i className="fas fa-arrow-left"></i> 上一章
+
+          <div className="reader-toolbar-group">
+            <div className="reader-toolbar-buttons">
+              <button
+                type="button"
+                className={bgColor === 'dark' ? 'active' : ''}
+                onClick={() => setBackground('dark')}
+                title="深色背景"
+              >
+                <Moon className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className={bgColor === 'sepia' ? 'active' : ''}
+                onClick={() => setBackground('sepia')}
+                title="复古背景"
+              >
+                <Book className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className={bgColor === 'light' ? 'active' : ''}
+                onClick={() => setBackground('light')}
+                title="浅色背景"
+              >
+                <Sun className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className={bgColor === 'green' ? 'active' : ''}
+                onClick={() => setBackground('green')}
+                title="绿色背景"
+              >
+                <Leaf className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className={bgColor === 'blue' ? 'active' : ''}
+                onClick={() => setBackground('blue')}
+                title="蓝色背景"
+              >
+                <Droplet className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className={bgColor === 'night' ? 'active' : ''}
+                onClick={() => setBackground('night')}
+                title="夜间背景"
+              >
+                <Star className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className={bgColor === 'contrast' ? 'active' : ''}
+                onClick={() => setBackground('contrast')}
+                title="高对比度"
+              >
+                <SunMoon className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <div className="reader-toolbar-group">
+            {prevChapterHref ? (
+              <Link href={prevChapterHref as any} className="action-button" title={prevChapterTitle || "上一章"}>
+                <ChevronLeft className="h-4 w-4" /> 上一章
+              </Link>
+            ) : (
+              <span className="action-button disabled">
+                <ChevronLeft className="h-4 w-4" /> 上一章
+              </span>
+            )}
+            <Link href={bookHref as any} className="action-button">
+              <List className="h-4 w-4" /> 返回目录
             </Link>
-          ) : (
-            <span className="action-button disabled">
-              <i className="fas fa-arrow-left"></i> 上一章
-            </span>
-          )}
-          <Link href={bookHref} className="action-button">
-            <i className="fas fa-book"></i> 返回目录
-          </Link>
-          {nextChapterHref ? (
-            <Link href={nextChapterHref} className="action-button" title={nextChapterTitle || "下一章"}>
-              下一章 <i className="fas fa-arrow-right"></i>
-            </Link>
-          ) : (
-            <span className="action-button disabled">
-              下一章 <i className="fas fa-arrow-right"></i>
-            </span>
-          )}
+            {nextChapterHref ? (
+              <Link href={nextChapterHref as any} className="action-button" title={nextChapterTitle || "下一章"}>
+                下一章 <ChevronRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <span className="action-button disabled">
+                下一章 <ChevronRight className="h-4 w-4" />
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>

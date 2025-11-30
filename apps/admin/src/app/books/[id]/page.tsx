@@ -1,36 +1,40 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { StatusPill } from '@/components/status-pill';
 import {
   getBookById,
   getBookSummary,
-  getChapters,
-  getPhasedSummaries,
   getPlotStages,
+  getPhasedSummaries,
   getScriptEpisodes,
   getPreviousBook,
   getNextBook
-} from '@/lib/queries';
+} from '@/lib/data/books';
+import { getChapters } from '@/lib/data/chapters';
 import { formatDate, formatNumber } from '@/lib/utils';
 import { CollapsibleSection } from '@/components/collapsible-section';
 import { BookEditButton } from '@/components/book-edit-button';
+import { Home, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 const BookFetchButton = dynamic(() => import('@/components/book-fetch-button'));
 const BookChaptersSection = dynamic(() => import('@/components/book-chapters-section'));
 
 type PageProps = {
-  params: { id: string };
-  searchParams?: Record<string, string | string[] | undefined>;
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function Page({
   params,
-  searchParams = {},
+  searchParams,
 }: PageProps) {
   const resolvedParams = await params;
-  const resolvedSearchParams = await searchParams;
+  const resolvedSearchParams = (await searchParams) || {};
   const bookId = Number(resolvedParams.id);
   const pageParam = Array.isArray(resolvedSearchParams.chapterPage) ? resolvedSearchParams.chapterPage[0] : resolvedSearchParams.chapterPage;
   const chapterPage = pageParam ? Number(pageParam) : 1;
@@ -51,251 +55,232 @@ export default async function Page({
   }
 
   const coverSrc = book.cover ?? '/default-cover.svg';
-  const chapterTotalPages = Math.max(1, Math.ceil(chapters.total / chapters.pageSize));
 
   const hasSummaryContent = !!summary?.summary?.trim();
   const hasPhasesContent = phases && phases.some(p => p.summary?.trim());
   const hasStagesContent = stages && stages.some(s => s.summary?.trim());
   const hasScriptsContent = scripts && scripts.some(sc => sc.title?.trim() || sc.keyPlot?.trim() || sc.range?.trim());
 
-  // 构建章节分页链接
-  const buildChapterPageLink = (targetPage: number) => {
-    const params = new URLSearchParams();
-    Object.entries(searchParams).forEach(([key, value]) => {
-      if (key === 'chapterPage') return;
-      if (Array.isArray(value)) {
-        value.forEach(v => params.append(key, v));
-      } else if (value != null) {
-        params.set(key, value);
-      }
-    });
-    params.set('chapterPage', String(targetPage));
-    const qs = params.toString();
-    return {
-      pathname: `/books/${bookId}`,
-      search: qs ? `?${qs}` : ''
-    };
-  };
-
-  // 生成章节分页项
-  const chapterPageItems = (() => {
-    if (chapterTotalPages <= 7) {
-      return Array.from({ length: chapterTotalPages }, (_, index) => ({
-        type: 'page' as const,
-        value: index + 1,
-      }));
-    }
-
-    const pagesToInclude = new Set<number>([
-      1,
-      2,
-      chapterTotalPages - 1,
-      chapterTotalPages,
-    ]);
-
-    for (let offset = -1; offset <= 1; offset += 1) {
-      const page = chapterPage + offset;
-      if (page > 2 && page < chapterTotalPages - 1) {
-        pagesToInclude.add(page);
-      }
-    }
-
-    const sorted = Array.from(pagesToInclude)
-      .filter(page => page >= 1 && page <= chapterTotalPages)
-      .sort((a, b) => a - b);
-
-    const items: Array<{ type: 'page'; value: number } | { type: 'ellipsis' }> = [];
-    let previous = 0;
-    sorted.forEach(page => {
-      if (page - previous > 1) {
-        items.push({ type: 'ellipsis' });
-      }
-      items.push({ type: 'page', value: page });
-      previous = page;
-    });
-
-    return items;
-  })();
-
   return (
-    <>
-      <div className="panel" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link className="action-button" href="/">
-          <i className="fas fa-home"></i> 返回首页
-        </Link>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          {prevBook ? (
-            <Link className="action-button" href={`/books/${prevBook.id}`}>
-              <i className="fas fa-arrow-left"></i> 上一本
-            </Link>
-          ) : (
-            <button className="action-button" disabled>
-              <i className="fas fa-arrow-left"></i> 上一本
-            </button>
-          )}
-          <Link className="action-button" href="/?status=all">
-            <i className="fas fa-book"></i> 所有书籍
+    <div className="space-y-6">
+      {/* Navigation Bar */}
+      <Card>
+        <CardContent className="flex items-center justify-between p-4">
+          <Link href="/" passHref>
+            <Button variant="outline" size="sm">
+              <Home className="mr-2 h-4 w-4" />
+              返回首页
+            </Button>
           </Link>
-          {nextBook ? (
-            <Link className="action-button" href={`/books/${nextBook.id}`}>
-              下一本 <i className="fas fa-arrow-right"></i>
+          <div className="flex gap-2">
+            {prevBook ? (
+              <Link href={`/books/${prevBook.id}` as any} passHref>
+                <Button variant="outline" size="sm">
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  上一本
+                </Button>
+              </Link>
+            ) : (
+              <Button variant="outline" size="sm" disabled>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                上一本
+              </Button>
+            )}
+            <Link href="/?status=all" passHref>
+              <Button variant="outline" size="sm">
+                <BookOpen className="mr-2 h-4 w-4" />
+                所有书籍
+              </Button>
             </Link>
-          ) : (
-            <button className="action-button" disabled>
-              下一本 <i className="fas fa-arrow-right"></i>
-            </button>
-          )}
-        </div>
-      </div>
-      <section className="panel book-hero">
-        <div className="book-hero-grid">
-          <div>
-            <h2 className="book-title">{book.name}</h2>
-            <div className="pill-list">
-              <span className='pill'>作者：{book.author ?? '未知'}</span>
-              <span className="pill">来源：{book.source ?? '—'}</span>
-              <span className="pill">分类：{book.category ?? '未分类'}</span>
-              <span className="pill">章节：{formatNumber(book.chapterCount)}</span>
-              <span className="pill">
-                最新章节：{book.latestChapter ?? '未记录'}
-              </span>
-              <span className="pill">入库：{formatDate(book.createdAt)}</span>
-            </div>
-            
-            <p className='book-intro'>{book.introduce ?? '暂无简介'}</p>
-            <div className='book-action-toolbar'>
-              <StatusPill status={book.status} />
-              <BookEditButton book={book} />
-              <BookFetchButton 
-                  bookId={book.id} 
+            {nextBook ? (
+              <Link href={`/books/${nextBook.id}` as any} passHref>
+                <Button variant="outline" size="sm">
+                  下一本
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            ) : (
+              <Button variant="outline" size="sm" disabled>
+                下一本
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Book Hero Section */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="grid gap-6 md:grid-cols-[1fr_200px]">
+            <div className="space-y-4">
+              <h1 className="text-3xl font-bold">{book.name}</h1>
+
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary">作者：{book.author ?? '未知'}</Badge>
+                <Badge variant="secondary">来源：{book.source ?? '—'}</Badge>
+                <Badge variant="secondary">分类：{book.category ?? '未分类'}</Badge>
+                <Badge variant="secondary">章节：{formatNumber(book.chapterCount)}</Badge>
+                <Badge variant="secondary">最新章节：{book.latestChapter ?? '未记录'}</Badge>
+                <Badge variant="secondary">入库：{formatDate(book.createdAt)}</Badge>
+              </div>
+
+              <p className="text-muted-foreground leading-relaxed">
+                {book.introduce ?? '暂无简介'}
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                <StatusPill status={book.status} />
+                <BookEditButton book={book} />
+                <BookFetchButton
+                  bookId={book.id}
                   status={book.status}
                 />
+              </div>
+            </div>
+
+            <div className="flex justify-center md:justify-end">
+              <div className="relative w-[200px] h-[300px] rounded-lg overflow-hidden border shadow-lg">
+                <Image
+                  src={coverSrc}
+                  alt={`${book.name} 封面`}
+                  fill
+                  className="object-cover"
+                  priority
+                  unoptimized
+                />
+              </div>
             </div>
           </div>
-          <div className="book-cover-panel">
-            <Image
-              src={coverSrc}
-              alt={`${book.name} 封面`}
-              className="book-cover-image"
-              width={200}
-              height={300}
-              priority
-              unoptimized
-            />
-          </div>
-        </div>
-      </section>
+        </CardContent>
+      </Card>
 
+      {/* Chapters Section */}
       <BookChaptersSection bookId={bookId} initialChapters={chapters} />
-      
+
+      {/* Summary Section */}
       {hasSummaryContent && (
         <CollapsibleSection
           title="整书摘要"
           subtitle={summary?.totalChapters ? `覆盖 ${summary.totalChapters} 章` : ''}
           defaultOpen={false}
           actions={
-            <a className="action-button" href={`/books/${book.id}/export/summary`}>
-              导出文本
-            </a>
+            <Link href={`/books/${book.id}/export/summary` as any} passHref>
+              <Button variant="outline" size="sm">
+                导出文本
+              </Button>
+            </Link>
           }
         >
-          <p style={{ whiteSpace: 'pre-line' }}>{summary?.summary}</p>
+          <p className="whitespace-pre-line text-sm leading-relaxed">{summary?.summary}</p>
         </CollapsibleSection>
       )}
 
+      {/* Phased Summaries */}
       {hasPhasesContent && (
         <CollapsibleSection
           title="阶段性摘要"
           subtitle="快速了解主线推进"
           defaultOpen={false}
           actions={
-            <a className="action-button" href={`/books/${book.id}/export/phases`}>
-              导出文本
-            </a>
+            <Link href={`/books/${book.id}/export/phases` as any} passHref>
+              <Button variant="outline" size="sm">
+                导出文本
+              </Button>
+            </Link>
           }
         >
-          <div className="timeline">
+          <div className="space-y-4">
             {phases
               .filter((phase) => phase.summary && phase.summary.trim() !== '')
               .map((phase) => (
-                <article key={phase.id} className="timeline-item">
-                  <small>
-                    第 {phase.startSort} - {phase.endSort} 章
-                  </small>
-                  <p style={{ marginTop: 6, whiteSpace: 'pre-line' }}>{phase.summary}</p>
-                </article>
+                <Card key={phase.id}>
+                  <CardContent className="p-4">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      第 {phase.startSort} - {phase.endSort} 章
+                    </p>
+                    <p className="whitespace-pre-line text-sm leading-relaxed">{phase.summary}</p>
+                  </CardContent>
+                </Card>
               ))}
           </div>
         </CollapsibleSection>
       )}
 
+      {/* Plot Stages */}
       {hasStagesContent && (
         <CollapsibleSection
           title="剧情阶段 / 战斗节奏"
           subtitle="对外宣推或制作改编时的核心素材"
           defaultOpen={false}
           actions={
-            <a className="action-button" href={`/books/${book.id}/export/stages`}>
-              导出文本
-            </a>
+            <Link href={`/books/${book.id}/export/stages` as any} passHref>
+              <Button variant="outline" size="sm">
+                导出文本
+              </Button>
+            </Link>
           }
         >
-          <div className="timeline">
+          <div className="space-y-4">
             {stages
               .filter((stage) => stage.summary && stage.summary.trim() !== '')
               .map((stage) => (
-                <article key={stage.id} className="timeline-item">
-                  <small>
-                    阶段 {stage.stageNumber} · 第 {stage.startEpisode}-{stage.endEpisode} 集
-                  </small>
-                  <h4 style={{ margin: '6px 0 4px' }}>{stage.stageName}</h4>
-                  <p style={{ whiteSpace: 'pre-line', margin: '0 0 8px' }}>{stage.summary}</p>
-                  <div className="pill-list">
-                    {stage.stageGoal && <span className="pill">目标：{stage.stageGoal}</span>}
-                    {stage.conflict && <span className="pill">冲突：{stage.conflict}</span>}
-                    {stage.protagonistUpgrade && (
-                      <span className="pill">主角成长：{stage.protagonistUpgrade}</span>
-                    )}
-                  </div>
-                </article>
+                <Card key={stage.id}>
+                  <CardContent className="p-4 space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      阶段 {stage.stageNumber} · 第 {stage.startEpisode}-{stage.endEpisode} 集
+                    </p>
+                    <h4 className="font-semibold">{stage.stageName}</h4>
+                    <p className="whitespace-pre-line text-sm leading-relaxed">{stage.summary}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {stage.stageGoal && <Badge variant="outline">目标：{stage.stageGoal}</Badge>}
+                      {stage.conflict && <Badge variant="outline">冲突：{stage.conflict}</Badge>}
+                      {stage.protagonistUpgrade && (
+                        <Badge variant="outline">主角成长：{stage.protagonistUpgrade}</Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
           </div>
         </CollapsibleSection>
       )}
 
+      {/* Scripts */}
       {hasScriptsContent && (
         <CollapsibleSection
           title="改编剧本"
           subtitle={`共 ${formatNumber(scripts.length)} 集，按剧集顺序展示`}
           defaultOpen={false}
         >
-          <table className="table">
-            <thead>
-              <tr>
-                <th>集数</th>
-                <th>标题</th>
-                <th>时长</th>
-                <th>章节范围</th>
-                <th>关键剧情</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scripts
-                .filter((sc) => (sc.title && sc.title.trim() !== '') || (sc.keyPlot && sc.keyPlot.trim() !== '') || (sc.range && sc.range.trim() !== ''))
-                .map((script) => (
-                  <tr key={script.id}>
-                    <td>第 {script.episode} 集</td>
-                    <td>{script.title ?? '未命名'}</td>
-                    <td>{script.duration} min</td>
-                    <td>{script.range ?? '—'}</td>
-                    <td style={{ whiteSpace: 'pre-line' }}>{script.keyPlot ?? '—'}</td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
+          <div className="rounded-md border">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">集数</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">标题</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">时长</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">章节范围</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">关键剧情</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scripts
+                  .filter((sc) => (sc.title && sc.title.trim() !== '') || (sc.keyPlot && sc.keyPlot.trim() !== '') || (sc.range && sc.range.trim() !== ''))
+                  .map((script) => (
+                    <tr key={script.id} className="border-b transition-colors hover:bg-muted/50">
+                      <td className="p-4 align-middle">第 {script.episode} 集</td>
+                      <td className="p-4 align-middle">{script.title ?? '未命名'}</td>
+                      <td className="p-4 align-middle">{script.duration} min</td>
+                      <td className="p-4 align-middle">{script.range ?? '—'}</td>
+                      <td className="p-4 align-middle whitespace-pre-line text-sm">{script.keyPlot ?? '—'}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
         </CollapsibleSection>
       )}
-    </>
+    </div>
   );
 }
-

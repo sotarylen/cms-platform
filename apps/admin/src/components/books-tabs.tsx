@@ -2,9 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import TriggerButton from '@/components/trigger-button';
 import { StatusPill } from '@/components/status-pill';
 import { formatDate, formatNumber } from '@/lib/utils';
+import { Pagination } from '@/components/pagination';
 
 type BookItem = {
   id: number;
@@ -38,7 +42,7 @@ export default function BooksTabs({
   const [total, setTotal] = useState(0);
   const [pageSize, setPageSize] = useState(30);
 
-  const fetchList = async (opts?: { tab?: string; query?: string; source?: string; page?: number }) => {
+  const fetchList = async (opts?: { tab?: string; query?: string; source?: string; page?: number; pageSize?: number }) => {
     setLoading(true);
     try {
       const p = new URLSearchParams();
@@ -46,6 +50,7 @@ export default function BooksTabs({
       if ((opts?.query ?? query) !== '') p.set('query', opts?.query ?? query);
       if ((opts?.source ?? source) !== '') p.set('source', opts?.source ?? source);
       p.set('page', String(opts?.page ?? page));
+      p.set('pageSize', String(opts?.pageSize ?? pageSize));
 
       const res = await fetch(`/api/books?${p.toString()}`, { cache: 'no-store' });
       const json = await res.json();
@@ -61,30 +66,41 @@ export default function BooksTabs({
   };
 
   useEffect(() => {
-    fetchList({ tab, query, source, page });
-    // keep the page scrolled to the component position: browser won't navigate, so page stays
+    fetchList({ tab, query, source, page, pageSize });
   }, []);
 
   const onSwitch = (next: string) => {
     if (next === tab) return;
     setTab(next);
-    // reset to first page when switching
-    fetchList({ tab: next, query, source, page: 1 });
+    fetchList({ tab: next, query, source, page: 1, pageSize });
   };
 
   const onSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchList({ tab, query, source, page: 1 });
+    fetchList({ tab, query, source, page: 1, pageSize });
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    fetchList({ tab, query, source, page: newPage, pageSize });
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setPage(1); // Reset to first page when changing page size
+    fetchList({ tab, query, source, page: 1, pageSize: newPageSize });
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
-        <div className="tabs" role="tablist" aria-label="书库 Tabs">
+    <div className="space-y-4">
+      {/* Tabs and Search */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
           <button
             role="tab"
             aria-selected={tab === 'in-stock'}
-            className={"tab-button " + (tab === 'in-stock' ? 'active' : '')}
+            className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${tab === 'in-stock' ? 'bg-background text-foreground shadow-sm' : ''
+              }`}
             onClick={() => onSwitch('in-stock')}
           >
             在库书籍
@@ -92,73 +108,90 @@ export default function BooksTabs({
           <button
             role="tab"
             aria-selected={tab === 'pending'}
-            className={"tab-button " + (tab === 'pending' ? 'active' : '')}
+            className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${tab === 'pending' ? 'bg-background text-foreground shadow-sm' : ''
+              }`}
             onClick={() => onSwitch('pending')}
           >
             待获取数据
           </button>
         </div>
-        <form onSubmit={onSearch} style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <input
+
+        <form onSubmit={onSearch} className="flex gap-2">
+          <Input
             placeholder="书名 / 作者"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)', background: 'transparent', color: 'var(--text)' }}
+            className="w-40"
           />
-          <input
+          <Input
             placeholder="来源"
             value={source}
             onChange={(e) => setSource(e.target.value)}
-            style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)', background: 'transparent', color: 'var(--text)' }}
+            className="w-32"
           />
-          <button className="action-button" type="submit">搜索</button>
+          <Button type="submit" variant="default">搜索</Button>
         </form>
       </div>
 
-      <div style={{ minHeight: 40 }}>
-        {loading ? <p className="muted">加载中…</p> : null}
-        {!loading && items.length === 0 ? <p className="muted">没有符合条件的书籍。</p> : null}
+      {/* Content */}
+      <div className="min-h-[200px]">
+        {loading && <p className="text-center text-muted-foreground py-8">加载中…</p>}
+        {!loading && items.length === 0 && <p className="text-center text-muted-foreground py-8">没有符合条件的书籍。</p>}
 
-        {!loading && items.length > 0 ? (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>书名</th>
-                <th>作者</th>
-                <th>来源</th>
-                <th>最新章节</th>
-                <th>章节数</th>
-                <th>状态</th>
-                <th>操作</th>
-                <th>入库时间</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((book) => (
-                <tr key={book.id}>
-                  <td><span style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 600 }}>#{book.id}</span></td>
-                  <td><Link className="table-row-link" href={`/books/${book.id}`}>{book.name}</Link></td>
-                  <td>{book.author ?? '未知'}</td>
-                  <td>{book.source ?? '—'}</td>
-                  <td>{book.latestChapter ?? '—'}</td>
-                  <td>{formatNumber(book.chapterCount)}</td>
-                  <td><StatusPill status={book.status} /></td>
-                  <td>{book.status === 0 ? <TriggerButton bookId={book.id} /> : null}</td>
-                  <td>{formatDate(new Date(book.createdAt))}</td>
+        {!loading && items.length > 0 && (
+          <div className="rounded-md border">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">ID</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">书名</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">作者</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">来源</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">章节数</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">状态</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">操作</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">入库时间</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : null}
-
-        {/* pagination simple controls */}
-        <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div className="muted">共 {total} 条</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="action-button" disabled={page <= 1} onClick={() => fetchList({ tab, query, source, page: Math.max(1, page - 1) })}>上一页</button>
-            <button className="action-button" disabled={items.length < pageSize} onClick={() => fetchList({ tab, query, source, page: page + 1 })}>下一页</button>
+              </thead>
+              <tbody>
+                {items.map((book) => (
+                  <tr key={book.id} className="border-b transition-colors hover:bg-muted/50">
+                    <td className="p-4 align-middle">
+                      <span className="text-sm font-semibold text-muted-foreground">#{book.id}</span>
+                    </td>
+                    <td className="p-4 align-middle">
+                      <Link href={`/books/${book.id}` as any} className="font-medium hover:underline">
+                        {book.name}
+                      </Link>
+                    </td>
+                    <td className="p-4 align-middle text-sm">{book.author ?? '未知'}</td>
+                    <td className="p-4 align-middle text-sm">{book.source ?? '—'}</td>
+                    <td className="p-4 align-middle text-sm">{formatNumber(book.chapterCount)}</td>
+                    <td className="p-4 align-middle">
+                      <StatusPill status={book.status} />
+                    </td>
+                    <td className="p-4 align-middle">
+                      {book.status === 0 ? <TriggerButton bookId={book.id} /> : null}
+                    </td>
+                    <td className="p-4 align-middle text-sm text-muted-foreground">
+                      {formatDate(new Date(book.createdAt))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        )}
+
+        {/* Pagination */}
+        <div className="mt-4">
+          <Pagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
         </div>
       </div>
     </div>

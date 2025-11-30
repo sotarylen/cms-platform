@@ -3,10 +3,11 @@ import { getPool } from '@/lib/db';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const bookId = Number(params.id);
+    const resolvedParams = await params;
+    const bookId = Number(resolvedParams.id);
     const body = await request.json();
 
     if (!bookId || isNaN(bookId)) {
@@ -20,6 +21,10 @@ export async function PATCH(
     const updates: string[] = [];
     const values: any[] = [];
 
+    if (body.name !== undefined) {
+      updates.push('book_name = ?');
+      values.push(body.name || null);
+    }
     if (body.author !== undefined) {
       updates.push('book_author = ?');
       values.push(body.author || null);
@@ -48,7 +53,7 @@ export async function PATCH(
 
     values.push(bookId);
     const sql = `UPDATE n8n_book_list SET ${updates.join(', ')} WHERE id = ?`;
-    
+
     await pool.query(sql, values);
 
     return NextResponse.json({ success: true });

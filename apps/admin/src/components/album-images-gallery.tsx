@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ImageLightbox } from './image-lightbox';
 import { setAlbumCover } from '@/app/actions/albums';
+import { toast } from 'sonner';
 
 type Props = {
     albumId: number;
@@ -11,31 +12,18 @@ type Props = {
 };
 
 export function AlbumImagesGallery({ albumId, images, storagePath }: Props) {
-    const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-    const [columns, setColumns] = useState(4);
+    const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [columns, setColumns] = useState(2);
 
-    const handleSetCover = async (index: number) => {
-        const filename = images[index];
-        const coverUrl = `/api/images/albums/${albumId}/${filename}`;
-
-        if (confirm('确定要将这张图片设为封面吗？')) {
-            const result = await setAlbumCover(albumId, coverUrl);
-            if (result.success) {
-                // Optional: Show success message
-            } else {
-                alert('设置封面失败');
-            }
-        }
-    };
-
-    // 响应式列数
+    // Responsive column calculation
     useEffect(() => {
         const updateColumns = () => {
             const width = window.innerWidth;
-            if (width < 600) setColumns(2);
-            else if (width < 900) setColumns(3);
-            else if (width < 1200) setColumns(4);
-            else setColumns(5);
+            if (width >= 1280) setColumns(5);      // xl
+            else if (width >= 1024) setColumns(4); // lg
+            else if (width >= 768) setColumns(3);  // md
+            else setColumns(2);                    // default
         };
 
         updateColumns();
@@ -43,53 +31,61 @@ export function AlbumImagesGallery({ albumId, images, storagePath }: Props) {
         return () => window.removeEventListener('resize', updateColumns);
     }, []);
 
-    // 将图片分配到各列
-    const columnImages = Array.from({ length: columns }, () => [] as typeof images);
-    images.forEach((image, index) => {
-        columnImages[index % columns].push(image);
-    });
+    const handleImageClick = (index: number) => {
+        setSelectedImageIndex(index);
+        setLightboxOpen(true);
+    };
+
+    const handleSetCover = async (index: number) => {
+        const filename = images[index];
+        const coverUrl = `/api/images/albums/${albumId}/${filename}`;
+
+        const result = await setAlbumCover(albumId, coverUrl);
+        if (result.success) {
+            toast.success('设置封面成功！');
+        } else {
+            toast.error('设置封面失败');
+        }
+    };
 
     if (images.length === 0) {
-        // ... (placeholder logic)
+        return <div className="text-center py-10 text-muted-foreground">暂无图片</div>;
     }
+
+    // Distribute images into columns for masonry layout
+    const columnImages: string[][] = Array.from({ length: columns }, () => []);
+    const imageIndices: number[][] = Array.from({ length: columns }, () => []); // Track original indices
+
+    images.forEach((image, index) => {
+        const colIndex = index % columns;
+        columnImages[colIndex].push(image);
+        imageIndices[colIndex].push(index);
+    });
+
+    // Construct full URLs for the lightbox
+    const imageUrls = images.map(filename => `/api/images/albums/${albumId}/${filename}`);
 
     return (
         <>
-            <div className="album-images-masonry" style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+            <div className="flex gap-4 items-start">
                 {columnImages.map((colImages, colIndex) => (
-                    <div key={colIndex} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        {colImages.map((filename, index) => {
-                            // 计算原始索引以保持正确的点击行为
-                            // 原始索引 = (index * columns) + colIndex
-                            // 注意：这假设是完全填充的，但实际上是按顺序分配的，所以这公式是对的
-                            // 比如 4列:
-                            // Col 0: 0, 4, 8
-                            // Col 1: 1, 5, 9
-                            // Col 2: 2, 6, 10
-                            // Col 3: 3, 7, 11
-                            // 所以 index=1 (第二行) colIndex=2 (第三列) => 1*4 + 2 = 6. 正确。
-                            const originalIndex = (index * columns) + colIndex;
-
-                            // 边界检查：如果计算出的索引超出了图片总数（虽然理论上不应该发生，但为了安全）
-                            if (originalIndex >= images.length) return null;
-
+                    <div key={colIndex} className="flex-1 flex flex-col gap-4">
+                        {colImages.map((filename, i) => {
+                            const originalIndex = imageIndices[colIndex][i];
                             const imagePath = `/api/images/albums/${albumId}/${filename}`;
                             return (
                                 <div
                                     key={originalIndex}
-                                    className="album-image-item"
-                                    onClick={() => setSelectedImageIndex(originalIndex)}
-                                    style={{ marginBottom: 0 }} // 覆盖 CSS 中的 margin
+                                    className="relative group cursor-zoom-in rounded-lg overflow-hidden bg-muted"
+                                    onClick={() => handleImageClick(originalIndex)}
                                 >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                         src={imagePath}
-                                        alt={`图片 ${originalIndex + 1}`}
+                                        alt={`Image ${originalIndex + 1}`}
+                                        className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105"
                                         loading="lazy"
-                                        style={{ width: '100%', height: 'auto', display: 'block' }}
                                     />
-                                    <div className="album-image-overlay">
-                                        <span>{originalIndex + 1}</span>
-                                    </div>
                                 </div>
                             );
                         })}
@@ -97,11 +93,11 @@ export function AlbumImagesGallery({ albumId, images, storagePath }: Props) {
                 ))}
             </div>
 
-            {selectedImageIndex !== null && (
+            {lightboxOpen && (
                 <ImageLightbox
-                    images={images.map(filename => `/api/images/albums/${albumId}/${filename}`)}
+                    images={imageUrls}
                     initialIndex={selectedImageIndex}
-                    onClose={() => setSelectedImageIndex(null)}
+                    onClose={() => setLightboxOpen(false)}
                     onSetCover={handleSetCover}
                 />
             )}

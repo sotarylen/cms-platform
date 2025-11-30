@@ -3,6 +3,11 @@
 import { useState } from 'react';
 import { saveWebhookAction, deleteWebhookAction } from '@/app/actions/settings';
 import type { WebhookConfig } from '@/lib/types';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { Trash2, Plus, Save, Loader2 } from 'lucide-react';
 
 type Props = {
     initialWebhooks: WebhookConfig[];
@@ -10,39 +15,38 @@ type Props = {
 
 export function WebhookManager({ initialWebhooks }: Props) {
     const [webhooks, setWebhooks] = useState<WebhookConfig[]>(initialWebhooks);
-    const [editing, setEditing] = useState<string | null>(null);
-    const [formData, setFormData] = useState<Partial<WebhookConfig>>({});
     const [loading, setLoading] = useState(false);
 
-    const handleEdit = (webhook: WebhookConfig) => {
-        setEditing(webhook.id);
-        setFormData(webhook);
-    };
+    // New webhook state
+    const [newTitle, setNewTitle] = useState('');
+    const [newUrl, setNewUrl] = useState('');
+    const [isAdding, setIsAdding] = useState(false);
 
-    const handleNew = () => {
-        setEditing('new');
-        setFormData({
-            id: `webhook-${Date.now()}`,
-            title: '',
-            url: '',
-            apiKey: '',
-            description: '',
-        });
-    };
-
-    const handleSave = async () => {
-        if (!formData.title || !formData.url) {
-            alert('标题和URL不能为空');
+    const handleAdd = async () => {
+        if (!newTitle || !newUrl) {
+            toast.error('标题和URL不能为空');
             return;
         }
 
         setLoading(true);
-        const result = await saveWebhookAction(formData as WebhookConfig);
+        const newWebhook: WebhookConfig = {
+            id: `webhook-${Date.now()}`,
+            title: newTitle,
+            url: newUrl,
+            apiKey: '',
+            description: '',
+        };
+
+        const result = await saveWebhookAction(newWebhook);
 
         if (result.success) {
-            window.location.reload();
+            toast.success('添加成功');
+            setWebhooks([...webhooks, newWebhook]);
+            setNewTitle('');
+            setNewUrl('');
+            setIsAdding(false);
         } else {
-            alert(result.error || '保存失败');
+            toast.error(result.error || '添加失败');
         }
         setLoading(false);
     };
@@ -52,122 +56,122 @@ export function WebhookManager({ initialWebhooks }: Props) {
             return;
         }
 
-        setLoading(true);
         const result = await deleteWebhookAction(id);
 
         if (result.success) {
-            window.location.reload();
+            toast.success('删除成功');
+            setWebhooks(webhooks.filter(w => w.id !== id));
         } else {
-            alert(result.error || '删除失败');
+            toast.error(result.error || '删除失败');
         }
-        setLoading(false);
     };
 
-    const handleCancel = () => {
-        setEditing(null);
-        setFormData({});
+    const handleUpdate = async (webhook: WebhookConfig, field: keyof WebhookConfig, value: string) => {
+        const updatedWebhook = { ...webhook, [field]: value };
+
+        // Optimistic update
+        setWebhooks(webhooks.map(w => w.id === webhook.id ? updatedWebhook : w));
+
+        // Debounce could be added here for auto-save, but for now we'll just update local state
+        // and let user click a save button if we wanted strict save, 
+        // but for "simplified" UI, maybe we just want direct editing?
+        // Let's stick to the requested "Label Field Description" layout, 
+        // but since it's a list, we need a way to add/remove.
+
+        // Actually, for a list of items, a grid layout per item works best.
     };
+
+    const handleSaveItem = async (webhook: WebhookConfig) => {
+        const result = await saveWebhookAction(webhook);
+        if (result.success) {
+            toast.success('保存成功');
+        } else {
+            toast.error(result.error || '保存失败');
+        }
+    }
 
     return (
-        <div className="webhook-manager">
-            <div className="section-header">
-                <h3>Webhook 配置</h3>
-                <button onClick={handleNew} className="action-button action-button-primary">
-                    <i className="fas fa-plus"></i> 添加 Webhook
-                </button>
-            </div>
-
-            {editing && (
-                <div className="webhook-form panel" style={{ marginTop: 16, marginBottom: 16 }}>
-                    <h4>{editing === 'new' ? '新建 Webhook' : '编辑 Webhook'}</h4>
-
-                    <div className="form-group">
-                        <label>标题 *</label>
-                        <input
-                            type="text"
-                            value={formData.title || ''}
-                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                            placeholder="例如：抓取图册内容"
+        <div className="space-y-6">
+            {/* Existing Webhooks */}
+            {webhooks.map((webhook) => (
+                <div key={webhook.id} className="grid grid-cols-[200px_1fr_100px] gap-4 items-start border-b pb-6 last:border-0">
+                    <div className="space-y-2">
+                        <Input
+                            value={webhook.title}
+                            onChange={(e) => handleUpdate(webhook, 'title', e.target.value)}
+                            className="font-medium"
+                            placeholder="Webhook 标题"
                         />
                     </div>
-
-                    <div className="form-group">
-                        <label>Webhook URL *</label>
-                        <input
-                            type="url"
-                            value={formData.url || ''}
-                            onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                            placeholder="https://your-n8n.com/webhook/..."
+                    <div className="space-y-2">
+                        <Input
+                            value={webhook.url}
+                            onChange={(e) => handleUpdate(webhook, 'url', e.target.value)}
+                            className="font-mono text-sm"
+                            placeholder="https://..."
                         />
+                        <p className="text-xs text-muted-foreground">
+                            {webhook.description || '无描述'}
+                        </p>
                     </div>
-
-                    <div className="form-group">
-                        <label>API Key（可选）</label>
-                        <input
-                            type="text"
-                            value={formData.apiKey || ''}
-                            onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-                            placeholder="生产环境使用的 API Key"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label>描述（可选）</label>
-                        <textarea
-                            value={formData.description || ''}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            placeholder="用途说明"
-                            rows={3}
-                        />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: 12 }}>
-                        <button onClick={handleSave} disabled={loading} className="action-button action-button-primary">
-                            {loading ? '保存中...' : '保存'}
-                        </button>
-                        <button onClick={handleCancel} disabled={loading} className="action-button">
-                            取消
-                        </button>
+                    <div className="flex gap-2 justify-end">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleSaveItem(webhook)}
+                            title="保存"
+                        >
+                            <Save className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(webhook.id)}
+                            className="text-destructive hover:text-destructive"
+                            title="删除"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
                     </div>
                 </div>
+            ))}
+
+            {/* Add New Webhook */}
+            {isAdding ? (
+                <div className="grid grid-cols-[200px_1fr_100px] gap-4 items-start bg-muted/30 p-4 rounded-lg">
+                    <div className="space-y-2">
+                        <Label>标题</Label>
+                        <Input
+                            value={newTitle}
+                            onChange={(e) => setNewTitle(e.target.value)}
+                            placeholder="例如：抓取章节"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>URL</Label>
+                        <Input
+                            value={newUrl}
+                            onChange={(e) => setNewUrl(e.target.value)}
+                            placeholder="https://..."
+                            className="font-mono"
+                        />
+                    </div>
+                    <div className="flex gap-2 pt-8 justify-end">
+                        <Button onClick={handleAdd} disabled={loading} size="sm">
+                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : '添加'}
+                        </Button>
+                        <Button variant="ghost" onClick={() => setIsAdding(false)} size="sm">
+                            取消
+                        </Button>
+                    </div>
+                </div>
+            ) : (
+                <Button variant="outline" onClick={() => setIsAdding(true)} className="w-full border-dashed">
+                    <Plus className="mr-2 h-4 w-4" />
+                    添加 Webhook
+                </Button>
             )}
-
-            <div className="webhook-list">
-                {webhooks.map((webhook) => (
-                    <div key={webhook.id} className="webhook-item panel" style={{ marginBottom: 12 }}>
-                        <div>
-                            <h4>{webhook.title}</h4>
-                            <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-                                {webhook.url}
-                            </p>
-                            {webhook.apiKey && (
-                                <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                                    <i className="fas fa-key"></i> API Key: {webhook.apiKey.substring(0, 10)}...
-                                </p>
-                            )}
-                            {webhook.description && (
-                                <p style={{ fontSize: 13, marginTop: 8 }}>{webhook.description}</p>
-                            )}
-                        </div>
-                        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                            <button onClick={() => handleEdit(webhook)} className="action-button">
-                                <i className="fas fa-edit"></i> 编辑
-                            </button>
-                            <button onClick={() => handleDelete(webhook.id)} className="delete-button">
-                                <i className="fas fa-trash"></i> 删除
-                            </button>
-                        </div>
-                    </div>
-                ))}
-
-                {webhooks.length === 0 && !editing && (
-                    <div className="placeholder-content">
-                        <i className="fas fa-plug" style={{ fontSize: 48, color: 'var(--text-muted)' }}></i>
-                        <h3>暂无 Webhook 配置</h3>
-                        <p className="muted">点击上方按钮添加新的 Webhook</p>
-                    </div>
-                )}
-            </div>
         </div>
     );
 }

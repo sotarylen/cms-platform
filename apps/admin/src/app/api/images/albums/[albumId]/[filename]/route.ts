@@ -5,7 +5,7 @@ import { getAlbumStoragePath } from '@/lib/config';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { albumId: string; filename: string } }
+    { params }: { params: Promise<{ albumId: string; filename: string }> }
 ) {
     try {
         const resolvedParams = await params;
