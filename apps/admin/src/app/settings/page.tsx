@@ -1,14 +1,14 @@
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings as SettingsIcon, Database, Webhook, Bell, Users, ArrowRight, HardDrive } from 'lucide-react';
+import { Settings as SettingsIcon, Database, Webhook, Bell, Users, ArrowRight, HardDrive, Palette } from 'lucide-react';
 
 export default function SettingsPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold">系统设置</h1>
-                <p className="text-muted-foreground mt-2">管理系统配置和偏好设置</p>
+                <h1 className="text-3xl font-bold tracking-tight">系统设置</h1>
+                <p className="text-sm text-muted-foreground mt-2">管理系统配置和偏好设置</p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
@@ -76,6 +76,29 @@ export default function SettingsPage() {
                         <Button asChild variant="outline">
                             <Link href="/settings/webhook">
                                 配置 Webhook <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                {/* Components Showcase */}
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <Palette className="h-5 w-5 text-purple-600" />
+                            <CardTitle>组件展示</CardTitle>
+                        </div>
+                        <CardDescription>
+                            查看所有可用的 UI 组件和设计元素
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            浏览系统中所有标准组件和待标准化的 UI 模式。
+                        </p>
+                        <Button asChild variant="outline">
+                            <Link href="/settings/components">
+                                查看组件 <ArrowRight className="ml-2 h-4 w-4" />
                             </Link>
                         </Button>
                     </CardContent>

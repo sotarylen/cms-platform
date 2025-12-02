@@ -318,6 +318,23 @@ export const getAdjacentAlbums = async (currentId: number): Promise<{ prevId: nu
     };
 };
 
+export const getAdjacentStudios = async (currentId: number): Promise<{ prevId: number | null; nextId: number | null }> => {
+    const [prevRow] = await query<Array<{ studio_id: number }>>(
+        'SELECT studio_id FROM n8n_album_studios WHERE studio_id < ? ORDER BY studio_id DESC LIMIT 1',
+        [currentId]
+    );
+
+    const [nextRow] = await query<Array<{ studio_id: number }>>(
+        'SELECT studio_id FROM n8n_album_studios WHERE studio_id > ? ORDER BY studio_id ASC LIMIT 1',
+        [currentId]
+    );
+
+    return {
+        prevId: prevRow?.studio_id ?? null,
+        nextId: nextRow?.studio_id ?? null,
+    };
+};
+
 export const getModels = async (): Promise<AlbumModel[]> => {
     const rows = await query<any[]>(
         'SELECT * FROM n8n_album_models ORDER BY model_name ASC'

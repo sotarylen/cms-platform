@@ -27,6 +27,7 @@ const mapBookRows = (rows: any[]): BookListItem[] =>
         status: row.book_process_status,
         createdAt: new Date(row.created_at),
         chapterCount: Number(row.chapter_count ?? 0),
+        cover: row.book_cover_url,
     }));
 
 export const getBooks = async ({
@@ -98,7 +99,6 @@ export const getBooks = async ({
             : order === 'id_asc'
                 ? 'ORDER BY b.id ASC'
                 : 'ORDER BY b.created_at DESC';
-
     const rows = await query<any[]>(
         `
     SELECT
@@ -110,6 +110,7 @@ export const getBooks = async ({
       b.book_latest_chapter,
       b.book_process_status,
       b.created_at,
+      b.book_cover_url,
       COALESCE(ch.chapter_count, 0) AS chapter_count
     FROM n8n_book_list b
     LEFT JOIN (
@@ -317,6 +318,7 @@ export const getLatestBooks = async (limit: number = 5): Promise<BookListItem[]>
       b.book_latest_chapter,
       b.book_process_status,
       b.created_at,
+      b.book_cover_url,
       COALESCE(ch.chapter_count, 0) AS chapter_count
     FROM n8n_book_list b
     LEFT JOIN (

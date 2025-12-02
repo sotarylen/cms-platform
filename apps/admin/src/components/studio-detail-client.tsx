@@ -13,11 +13,15 @@ import {
     CardContent,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card"
-import { ArrowLeft, Edit, ExternalLink } from "lucide-react"
+    CardFooter,
+} from "@/components/ui/card";
+import { ArrowLeft, Edit, ExternalLink, List } from "lucide-react"
 import { StudioLogo } from '@/components/studio-logo';
 import { Pagination } from '@/components/pagination';
+import { DetailNavBar } from '@/components/navigation/detail-nav-bar';
 import { formatDate } from '@/lib/utils';
+import { ContentCard } from '@/components/data-display/content-card';
+import { StandardContainer } from '@/components/standard-container';
 
 type Props = {
     studio: AlbumStudio;
@@ -25,9 +29,11 @@ type Props = {
     total: number;
     page: number;
     pageSize: number;
+    prevId: number | null;
+    nextId: number | null;
 };
 
-export function StudioDetailClient({ studio: initialStudio, albums, total, page, pageSize }: Props) {
+export function StudioDetailClient({ studio: initialStudio, albums, total, page, pageSize, prevId, nextId }: Props) {
     const [studio, setStudio] = useState(initialStudio);
     const [showEditModal, setShowEditModal] = useState(false);
     const router = useRouter();
@@ -48,18 +54,23 @@ export function StudioDetailClient({ studio: initialStudio, albums, total, page,
     return (
         <div className="space-y-6">
             {/* Navigation */}
-            <div className="flex items-center justify-between">
-                <Button variant="ghost" asChild className="pl-0">
-                    <Link href="/albums/studios">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        返回列表
-                    </Link>
-                </Button>
-                <Button onClick={() => setShowEditModal(true)}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    编辑工作室
-                </Button>
-            </div>
+            {/* Navigation */}
+            <DetailNavBar
+                backButton={{
+                    href: "/albums/studios",
+                    label: "返回列表",
+                    icon: <ArrowLeft className="h-4 w-4" />
+                }}
+                navigation={{
+                    prevHref: prevId ? `/albums/studios/${prevId}` : null,
+                    prevLabel: "上一个",
+                    listHref: "/albums/studios",
+                    listLabel: "所有机构",
+                    listIcon: <List className="h-4 w-4" />,
+                    nextHref: nextId ? `/albums/studios/${nextId}` : null,
+                    nextLabel: "下一个"
+                }}
+            />
 
             {/* Studio Information */}
             <Card className="w-full">
@@ -73,22 +84,28 @@ export function StudioDetailClient({ studio: initialStudio, albums, total, page,
                             />
                         </div>
                         <div className="flex-1 space-y-4">
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-3">
-                                    <h1 className="text-2xl font-bold">{studio.studio_name}</h1>
-                                    <Badge variant="outline" className="font-mono">ID: {studio.studio_id}</Badge>
+                            <div className="flex justify-between items-start">
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-3">
+                                        <h1 className="text-2xl font-bold">{studio.studio_name}</h1>
+                                        <Badge variant="outline" className="font-mono">ID: {studio.studio_id}</Badge>
+                                    </div>
+                                    {studio.studio_url && (
+                                        <a
+                                            href={studio.studio_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
+                                        >
+                                            <ExternalLink className="mr-1 h-3 w-3" />
+                                            访问官网
+                                        </a>
+                                    )}
                                 </div>
-                                {studio.studio_url && (
-                                    <a
-                                        href={studio.studio_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
-                                    >
-                                        <ExternalLink className="mr-1 h-3 w-3" />
-                                        访问官网
-                                    </a>
-                                )}
+                                <Button onClick={() => setShowEditModal(true)} variant="outline" size="sm">
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    编辑工作室
+                                </Button>
                             </div>
 
                             {studio.studio_intro ? (
@@ -104,11 +121,10 @@ export function StudioDetailClient({ studio: initialStudio, albums, total, page,
             </Card>
 
             {/* Studio Albums */}
-            <Card className="w-full">
-                <CardHeader>
-                    <CardTitle>工作室图册 ({total})</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
+            <StandardContainer
+                title={`工作室图册 (${total})`}
+            >
+                <div className="space-y-4">
                     {albums.length === 0 ? (
                         <div className="flex h-[200px] items-center justify-center rounded-md border border-dashed">
                             <p className="text-muted-foreground">该工作室暂无图册</p>
@@ -116,34 +132,24 @@ export function StudioDetailClient({ studio: initialStudio, albums, total, page,
                     ) : (
                         <>
                             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                                {albums.map((album) => (
-                                    <Card key={album.id} className="overflow-hidden group">
-                                        <Link href={`/albums/${album.id}`}>
-                                            <div className="aspect-[2/3] overflow-hidden bg-muted relative">
-                                                <AlbumCover
-                                                    src={album.source_page_url || ''}
-                                                    alt={album.resource_title_raw}
-                                                    className="h-full w-full object-cover transition-all group-hover:scale-105"
-                                                />
+                                {albums.filter(album => album.id && album.id !== 0).map((album) => (
+                                    <ContentCard
+                                        key={album.id}
+                                        title={album.resource_title_raw}
+                                        image={album.source_page_url || null}
+                                        href={`/albums/${album.id}`}
+                                        subtitle={
+                                            <div className="flex flex-wrap gap-1">
+                                                {album.studio_name && (
+                                                    <span>{album.studio_name}</span>
+                                                )}
+                                                {album.studio_name && album.model_name && <span>•</span>}
                                                 {album.model_name && (
-                                                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2 text-white text-xs truncate">
-                                                        {album.model_name}
-                                                    </div>
+                                                    <span>{album.model_name}</span>
                                                 )}
                                             </div>
-                                        </Link>
-                                        <CardContent className="p-3 space-y-1">
-                                            <h3 className="font-medium text-sm truncate" title={album.resource_title_raw}>
-                                                <Link href={`/albums/${album.id}`} className="hover:underline">
-                                                    {album.resource_title_raw}
-                                                </Link>
-                                            </h3>
-                                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                <span>#{album.id}</span>
-                                                <span>{formatDate(album.created_at)}</span>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                                        }
+                                    />
                                 ))}
                             </div>
 
@@ -156,8 +162,8 @@ export function StudioDetailClient({ studio: initialStudio, albums, total, page,
                             />
                         </>
                     )}
-                </CardContent>
-            </Card>
+                </div>
+            </StandardContainer>
 
             {/* Edit Modal */}
             <StudioEditModal

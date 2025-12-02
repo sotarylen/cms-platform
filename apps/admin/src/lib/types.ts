@@ -8,6 +8,7 @@ export type BookListItem = {
   status: number | null;
   createdAt: Date;
   chapterCount: number;
+  cover: string | null;
 };
 
 export type ChapterListItem = {

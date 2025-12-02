@@ -10,6 +10,8 @@ import { getBooks, type BookListResponse } from '@/lib/data/books';
 import { formatDate, formatNumber } from '@/lib/utils';
 import BooksTabsWrapper from '@/components/books-tabs-wrapper';
 import { BookOpen, FileText, ScrollText, Film, FileCheck } from 'lucide-react';
+import { PageHeader } from '@/components/layout/page-header';
+import { StatCard } from '@/components/stat-card';
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -91,8 +93,7 @@ export default async function Home({ searchParams }: any) {
   const pageParam = normalizeParam(resolvedSearchParams.page);
   const page = pageParam ? Number(pageParam) : 1;
 
-  const [stats, books, latestChapters] = await Promise.all([
-    getDashboardStats(),
+  const [books, latestChapters] = await Promise.all([
     getBooks({
       search: query || undefined,
       status: tabParam === 'pending' ? '0' : statusParam || undefined,
@@ -105,54 +106,59 @@ export default async function Home({ searchParams }: any) {
     getLatestChapters(5),
   ]);
 
-  const statCards = [
-    { label: '书籍数量', value: stats.books, icon: BookOpen, color: 'text-blue-600' },
-    { label: '章节目录', value: stats.chapters, icon: FileText, color: 'text-green-600' },
-    { label: '章节正文', value: stats.contents, icon: ScrollText, color: 'text-purple-600' },
-    { label: '剧集脚本', value: stats.scripts, icon: Film, color: 'text-orange-600' },
-    { label: '整书摘要', value: stats.summaries, icon: FileCheck, color: 'text-pink-600' },
-  ];
+  // Fetch stats
+  const stats = await getDashboardStats();
+
+
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        title="书籍管理"
+        subtitle="管理和查看所有书籍、章节和相关内容。"
+      />
       {/* Statistics Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>数据一览</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            {statCards.map((stat) => (
-              <Card key={stat.label}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between space-x-4">
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        {stat.label}
-                      </p>
-                      <p className="text-2xl font-bold">
-                        <AnimatedNumber value={stat.value} duration={1000} />
-                      </p>
-                    </div>
-                    <stat.icon className={`h-8 w-8 ${stat.color}`} />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <StatCard
+          title="书籍数量"
+          value={stats.books}
+          icon={BookOpen}
+          gradient="from-blue-500/10 to-blue-500/5"
+        />
+        <StatCard
+          title="章节目录"
+          value={stats.chapters}
+          icon={FileText}
+          gradient="from-green-500/10 to-green-500/5"
+        />
+        <StatCard
+          title="章节正文"
+          value={stats.contents}
+          icon={ScrollText}
+          gradient="from-purple-500/10 to-purple-500/5"
+        />
+        <StatCard
+          title="剧集脚本"
+          value={stats.scripts}
+          icon={Film}
+          gradient="from-orange-500/10 to-orange-500/5"
+        />
+        <StatCard
+          title="整书摘要"
+          value={stats.summaries}
+          icon={FileCheck}
+          gradient="from-pink-500/10 to-pink-500/5"
+        />
+      </div>
 
       {/* Books List Section */}
       <Card>
-        <CardContent className="pt-6">
-          <BooksTabsWrapper
-            initialTab={tabParam}
-            initialQuery={query}
-            initialSource={source}
-            initialPage={page}
-          />
-        </CardContent>
+        <BooksTabsWrapper
+          initialTab={tabParam}
+          initialQuery={query}
+          initialSource={source}
+          initialPage={page}
+        />
       </Card>
     </div>
   );

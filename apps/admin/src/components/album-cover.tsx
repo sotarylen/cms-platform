@@ -12,7 +12,8 @@ type Props = {
 export function AlbumCover({ src, alt, className, style }: Props) {
     const [error, setError] = useState(false);
 
-    if (error || !src) {
+    // Treat empty string, null, '0', or error as invalid
+    if (error || !src || src.trim() === '' || src === '0') {
         return (
             <div className={`album-cover-placeholder ${className || ''}`} style={style}>
                 <i className="fas fa-image"></i>

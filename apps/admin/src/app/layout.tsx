@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import { AppSidebar } from '@/components/app-sidebar';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -7,8 +6,6 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { cn } from '@/lib/utils';
 import { getSession } from '@/lib/session';
 import { Toaster } from '@/components/ui/sonner';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'CMS Admin',
@@ -24,7 +21,7 @@ export default async function RootLayout({
 
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className={cn(inter.className, "bg-background text-foreground")}>
+      <body className="min-h-screen bg-background text-foreground bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950">
         <ThemeProvider defaultTheme="light" storageKey="cms-theme">
           <div className="flex h-screen overflow-hidden">
             <AppSidebar className="hidden md:flex flex-shrink-0" user={user} />

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getStudioById, getAlbumsByStudio } from '@/lib/data/albums';
+import { getStudioById, getAlbumsByStudio, getAdjacentStudios } from '@/lib/data/albums';
 import { StudioDetailClient } from '@/components/studio-detail-client';
 
 type PageProps = {
@@ -21,6 +21,7 @@ export default async function StudioDetailPage({ params, searchParams }: PagePro
     }
 
     const { items: albums, total } = await getAlbumsByStudio(studioId, { page, pageSize });
+    const { prevId, nextId } = await getAdjacentStudios(studioId);
 
     return (
         <StudioDetailClient
@@ -29,6 +30,8 @@ export default async function StudioDetailPage({ params, searchParams }: PagePro
             total={total}
             page={page}
             pageSize={pageSize}
+            prevId={prevId}
+            nextId={nextId}
         />
     );
 }

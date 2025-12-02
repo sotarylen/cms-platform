@@ -2,13 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import TriggerButton from '@/components/trigger-button';
 import { StatusPill } from '@/components/status-pill';
 import { formatDate, formatNumber } from '@/lib/utils';
 import { Pagination } from '@/components/pagination';
+import { ContentCard } from '@/components/data-display/content-card';
+import { StandardContainer } from '@/components/standard-container';
 
 type BookItem = {
   id: number;
@@ -19,6 +18,7 @@ type BookItem = {
   status: number | null;
   createdAt: string; // ISO
   chapterCount: number;
+  cover: string | null;
 };
 
 export default function BooksTabs({
@@ -36,11 +36,13 @@ export default function BooksTabs({
   const [query, setQuery] = useState(initialQuery);
   const [source, setSource] = useState(initialSource);
   const [page, setPage] = useState(initialPage);
+  const [searchValue, setSearchValue] = useState(initialQuery);
 
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<BookItem[]>([]);
   const [total, setTotal] = useState(0);
   const [pageSize, setPageSize] = useState(30);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   const fetchList = async (opts?: { tab?: string; query?: string; source?: string; page?: number; pageSize?: number }) => {
     setLoading(true);
@@ -72,12 +74,14 @@ export default function BooksTabs({
   const onSwitch = (next: string) => {
     if (next === tab) return;
     setTab(next);
+    setPage(1);
     fetchList({ tab: next, query, source, page: 1, pageSize });
   };
 
-  const onSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchList({ tab, query, source, page: 1, pageSize });
+  const handleSearch = () => {
+    setQuery(searchValue);
+    setPage(1);
+    fetchList({ tab, query: searchValue, source, page: 1, pageSize });
   };
 
   const handlePageChange = (newPage: number) => {
@@ -87,14 +91,14 @@ export default function BooksTabs({
 
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
-    setPage(1); // Reset to first page when changing page size
+    setPage(1);
     fetchList({ tab, query, source, page: 1, pageSize: newPageSize });
   };
 
   return (
-    <div className="space-y-4">
-      {/* Tabs and Search */}
-      <div className="flex items-center justify-between gap-4">
+    <StandardContainer
+      // title="书籍列表"
+      actionLeft={
         <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
           <button
             role="tab"
@@ -115,85 +119,99 @@ export default function BooksTabs({
             待获取数据
           </button>
         </div>
+      }
+      search={{
+        value: searchValue,
+        onChange: setSearchValue,
+        onSearch: handleSearch,
+        placeholder: "书名 / 作者"
+      }}
+      viewToggle={{
+        view: viewMode,
+        onViewChange: setViewMode
+      }}
+    >
+      <div className="space-y-4">
+        {/* Content */}
+        <div className="min-h-[200px]">
+          {loading && <p className="text-center text-muted-foreground py-8">加载中…</p>}
+          {!loading && items.length === 0 && <p className="text-center text-muted-foreground py-8">没有符合条件的书籍。</p>}
 
-        <form onSubmit={onSearch} className="flex gap-2">
-          <Input
-            placeholder="书名 / 作者"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-40"
-          />
-          <Input
-            placeholder="来源"
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            className="w-32"
-          />
-          <Button type="submit" variant="default">搜索</Button>
-        </form>
-      </div>
-
-      {/* Content */}
-      <div className="min-h-[200px]">
-        {loading && <p className="text-center text-muted-foreground py-8">加载中…</p>}
-        {!loading && items.length === 0 && <p className="text-center text-muted-foreground py-8">没有符合条件的书籍。</p>}
-
-        {!loading && items.length > 0 && (
-          <div className="rounded-md border">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">ID</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">书名</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">作者</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">来源</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">章节数</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">状态</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">操作</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">入库时间</th>
-                </tr>
-              </thead>
-              <tbody>
+          {!loading && items.length > 0 && (
+            viewMode === 'grid' ? (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                 {items.map((book) => (
-                  <tr key={book.id} className="border-b transition-colors hover:bg-muted/50">
-                    <td className="p-4 align-middle">
-                      <span className="text-sm font-semibold text-muted-foreground">#{book.id}</span>
-                    </td>
-                    <td className="p-4 align-middle">
-                      <Link href={`/books/${book.id}` as any} className="font-medium hover:underline">
-                        {book.name}
-                      </Link>
-                    </td>
-                    <td className="p-4 align-middle text-sm">{book.author ?? '未知'}</td>
-                    <td className="p-4 align-middle text-sm">{book.source ?? '—'}</td>
-                    <td className="p-4 align-middle text-sm">{formatNumber(book.chapterCount)}</td>
-                    <td className="p-4 align-middle">
-                      <StatusPill status={book.status} />
-                    </td>
-                    <td className="p-4 align-middle">
-                      {book.status === 0 ? <TriggerButton bookId={book.id} /> : null}
-                    </td>
-                    <td className="p-4 align-middle text-sm text-muted-foreground">
-                      {formatDate(new Date(book.createdAt))}
-                    </td>
-                  </tr>
+                  <ContentCard
+                    key={book.id}
+                    title={book.name}
+                    image={book.cover}
+                    href={`/books/${book.id}`}
+                    subtitle={
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{book.author || '未知作者'}</span>
+                        </div>
+                      </div>
+                    }
+                  />
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              </div>
+            ) : (
+              <div className="rounded-md border">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">ID</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">书名</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">作者</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">来源</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">章节数</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">状态</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">操作</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">入库时间</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((book) => (
+                      <tr key={book.id} className="border-b transition-colors hover:bg-muted/50">
+                        <td className="p-4 align-middle">
+                          <span className="text-sm font-semibold text-muted-foreground">#{book.id}</span>
+                        </td>
+                        <td className="p-4 align-middle">
+                          <Link href={`/books/${book.id}`} className="font-medium hover:underline">
+                            {book.name}
+                          </Link>
+                        </td>
+                        <td className="p-4 align-middle text-sm">{book.author ?? '未知'}</td>
+                        <td className="p-4 align-middle text-sm">{book.source ?? '—'}</td>
+                        <td className="p-4 align-middle text-sm">{formatNumber(book.chapterCount)}</td>
+                        <td className="p-4 align-middle">
+                          <StatusPill status={book.status} />
+                        </td>
+                        <td className="p-4 align-middle">
+                          {book.status === 0 ? <TriggerButton bookId={book.id} /> : null}
+                        </td>
+                        <td className="p-4 align-middle text-sm text-muted-foreground">
+                          {formatDate(new Date(book.createdAt))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          )}
+        </div>
 
         {/* Pagination */}
-        <div className="mt-4">
-          <Pagination
-            total={total}
-            page={page}
-            pageSize={pageSize}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-          />
-        </div>
+        <Pagination
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       </div>
-    </div>
+    </StandardContainer>
   );
 }

@@ -5,7 +5,8 @@ import { getBookById } from '@/lib/data/books';
 import { getChapterContent, getChapterNavigation } from '@/lib/data/chapters';
 import { ChapterContentViewer } from '@/components/chapter-content-viewer';
 import { ChapterEditButton } from '@/components/chapter-edit-button';
-import { Home, BookOpen } from 'lucide-react';
+import { Home, BookOpen, ArrowLeft } from 'lucide-react';
+import { DetailNavBar } from '@/components/navigation/detail-nav-bar';
 
 export default async function ChapterDetail(props: any) {
   const { params } = props;
@@ -26,32 +27,21 @@ export default async function ChapterDetail(props: any) {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-card/95 backdrop-blur border-b border-border shadow-sm">
-        <div className="px-6 py-4 flex items-center justify-between gap-4">
-          <div className="flex-1 min-w-0">
+      {/* Navigation & Header */}
+      <div className="space-y-4 mb-6">
+        <div className="px-2 flex items-center justify-between">
+          <div>
             <h1 className="text-2xl font-bold mb-1">{chapter.title}</h1>
             <p className="text-sm text-muted-foreground">《{book.name}》</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Link href="/" passHref>
-              <Button variant="ghost" size="sm" title="返回首页">
-                <Home className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href={`/books/${bookId}` as any} passHref>
-              <Button variant="ghost" size="sm" title="返回目录">
-                <BookOpen className="h-4 w-4" />
-              </Button>
-            </Link>
-            <ChapterEditButton
-              chapter={{
-                id: chapter.id,
-                title: chapter.title,
-                sortOrder: chapter.sortOrder,
-              }}
-              bookId={bookId}
-            />
-          </div>
+          <ChapterEditButton
+            chapter={{
+              id: chapter.id,
+              title: chapter.title,
+              sortOrder: chapter.sortOrder,
+            }}
+            bookId={bookId}
+          />
         </div>
       </div>
 

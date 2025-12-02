@@ -19,6 +19,7 @@ import { formatDate, formatNumber } from '@/lib/utils';
 import { CollapsibleSection } from '@/components/collapsible-section';
 import { BookEditButton } from '@/components/book-edit-button';
 import { Home, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { DetailNavBar } from '@/components/navigation/detail-nav-bar';
 import dynamic from 'next/dynamic';
 
 const BookFetchButton = dynamic(() => import('@/components/book-fetch-button'));
@@ -64,50 +65,23 @@ export default async function Page({
   return (
     <div className="space-y-6">
       {/* Navigation Bar */}
-      <Card>
-        <CardContent className="flex items-center justify-between p-4">
-          <Link href="/" passHref>
-            <Button variant="outline" size="sm">
-              <Home className="mr-2 h-4 w-4" />
-              返回首页
-            </Button>
-          </Link>
-          <div className="flex gap-2">
-            {prevBook ? (
-              <Link href={`/books/${prevBook.id}` as any} passHref>
-                <Button variant="outline" size="sm">
-                  <ChevronLeft className="mr-2 h-4 w-4" />
-                  上一本
-                </Button>
-              </Link>
-            ) : (
-              <Button variant="outline" size="sm" disabled>
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                上一本
-              </Button>
-            )}
-            <Link href="/?status=all" passHref>
-              <Button variant="outline" size="sm">
-                <BookOpen className="mr-2 h-4 w-4" />
-                所有书籍
-              </Button>
-            </Link>
-            {nextBook ? (
-              <Link href={`/books/${nextBook.id}` as any} passHref>
-                <Button variant="outline" size="sm">
-                  下一本
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            ) : (
-              <Button variant="outline" size="sm" disabled>
-                下一本
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Navigation Bar */}
+      <DetailNavBar
+        backButton={{
+          href: "/",
+          label: "返回首页",
+          icon: <Home className="h-4 w-4" />
+        }}
+        navigation={{
+          prevHref: prevBook ? `/books/${prevBook.id}` : null,
+          prevLabel: "上一本",
+          listHref: "/?status=all",
+          listLabel: "所有书籍",
+          listIcon: <BookOpen className="h-4 w-4" />,
+          nextHref: nextBook ? `/books/${nextBook.id}` : null,
+          nextLabel: "下一本"
+        }}
+      />
 
       {/* Book Hero Section */}
       <Card>

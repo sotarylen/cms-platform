@@ -11,7 +11,8 @@ import dynamic from 'next/dynamic';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ExternalLink, Calendar, Image as ImageIcon, User, Building2, ChevronLeft, ChevronRight, Edit } from "lucide-react";
+import { ExternalLink, Calendar, Image as ImageIcon, User, Building2, ChevronLeft, ChevronRight, Edit, ArrowLeft } from "lucide-react";
+import { DetailNavBar } from '@/components/navigation/detail-nav-bar';
 
 const AlbumFetchButton = dynamic(() => import('@/components/album-fetch-button'));
 
@@ -45,39 +46,22 @@ export default async function AlbumDetailPage({ params }: PageProps) {
     return (
         <div className="space-y-6">
             {/* 导航栏 */}
-            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 border-b -mx-6 px-6 flex items-center justify-between">
-                <BackButton />
-
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" disabled={!prevId} asChild={!!prevId}>
-                        {prevId ? (
-                            <Link href={`/albums/${prevId}`}>
-                                <ChevronLeft className="mr-2 h-4 w-4" /> 上一个
-                            </Link>
-                        ) : (
-                            <span>
-                                <ChevronLeft className="mr-2 h-4 w-4" /> 上一个
-                            </span>
-                        )}
-                    </Button>
-                    <Button variant="outline" size="sm" asChild>
-                        <Link href="/albums">
-                            <ImageIcon className="mr-2 h-4 w-4" /> 全部图册
-                        </Link>
-                    </Button>
-                    <Button variant="outline" size="sm" disabled={!nextId} asChild={!!nextId}>
-                        {nextId ? (
-                            <Link href={`/albums/${nextId}`}>
-                                下一个 <ChevronRight className="ml-2 h-4 w-4" />
-                            </Link>
-                        ) : (
-                            <span>
-                                下一个 <ChevronRight className="ml-2 h-4 w-4" />
-                            </span>
-                        )}
-                    </Button>
-                </div>
-            </div>
+            <DetailNavBar
+                backButton={{
+                    href: "/albums",
+                    label: "返回列表",
+                    icon: <ArrowLeft className="h-4 w-4" />
+                }}
+                navigation={{
+                    prevHref: prevId ? `/albums/${prevId}` : null,
+                    prevLabel: "上一个",
+                    listHref: "/albums",
+                    listLabel: "全部图册",
+                    listIcon: <ImageIcon className="h-4 w-4" />,
+                    nextHref: nextId ? `/albums/${nextId}` : null,
+                    nextLabel: "下一个"
+                }}
+            />
 
             {/* 图册基本信息 */}
             <Card>

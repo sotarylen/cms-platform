@@ -114,7 +114,7 @@ export function AppSidebar({ className, user }: SidebarProps) {
         <TooltipProvider>
             <div
                 className={cn(
-                    "min-h-screen border-r bg-background transition-all duration-300 ease-in-out flex flex-col",
+                    "min-h-screen border-r bg-background/60 backdrop-blur-md transition-all duration-300 ease-in-out flex flex-col",
                     isCollapsed ? "w-[70px]" : "w-64",
                     className
                 )}
