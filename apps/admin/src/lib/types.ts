@@ -55,10 +55,10 @@ export type ScriptEpisode = {
 
 export type DashboardStats = {
   books: number;
-  chapters: number;
   contents: number;
   scripts: number;
-  summaries: number;
+  albums: number;
+  studios: number;
 };
 
 export type ChapterContent = {

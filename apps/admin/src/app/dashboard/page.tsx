@@ -11,7 +11,7 @@ import { getDashboardStats } from "@/lib/data/stats"
 import { getLatestBooks } from "@/lib/data/books"
 import { getLatestAlbums } from "@/lib/data/albums"
 import { formatDate, formatNumber } from "@/lib/utils"
-import { BookOpen, FileText, Film, List, ArrowRight } from "lucide-react"
+import { BookOpen, FileText, Film, Image as ImageIcon, Building2, ArrowRight } from "lucide-react"
 
 export const dynamic = 'force-dynamic';
 
@@ -28,30 +28,36 @@ export default async function AdminPage() {
             />
 
             {/* Stats Overview */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                 <StatCard
-                    title="书籍总数"
+                    title="书籍数"
                     value={stats.books}
                     icon={BookOpen}
                     gradient="from-blue-500/10 to-blue-500/5"
                 />
                 <StatCard
-                    title="章节目录"
-                    value={stats.chapters}
-                    icon={List}
+                    title="章节数"
+                    value={stats.contents}
+                    icon={FileText}
                     gradient="from-green-500/10 to-green-500/5"
                 />
                 <StatCard
-                    title="正文内容"
-                    value={stats.contents}
-                    icon={FileText}
+                    title="剧本数"
+                    value={stats.scripts}
+                    icon={Film}
                     gradient="from-purple-500/10 to-purple-500/5"
                 />
                 <StatCard
-                    title="剧集脚本"
-                    value={stats.scripts}
-                    icon={Film}
+                    title="图册数"
+                    value={stats.albums}
+                    icon={ImageIcon}
                     gradient="from-orange-500/10 to-orange-500/5"
+                />
+                <StatCard
+                    title="工作室数"
+                    value={stats.studios}
+                    icon={Building2}
+                    gradient="from-pink-500/10 to-pink-500/5"
                 />
             </div>
 
