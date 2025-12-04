@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getAlbumById, getAdjacentAlbums, getModels, getStudios } from '@/lib/data/albums';
-import { getAlbumImages } from '@/lib/album-images';
+import { getAlbumImages, getAlbumVideos } from '@/lib/album-images';
 import { getAlbumStoragePath } from '@/lib/config';
 import { formatDate } from '@/lib/utils';
 import { AlbumImagesGallery } from '@/components/album-images-gallery';
+import { AlbumVideoGallery } from '@/components/album-video-gallery';
 import { BackButton } from '@/components/back-button';
 import { AlbumEditDialog } from '@/components/album-edit-dialog';
 import dynamic from 'next/dynamic';
@@ -18,12 +19,16 @@ const AlbumFetchButton = dynamic(() => import('@/components/album-fetch-button')
 
 type PageProps = {
     params: Promise<{ id: string }>;
+    searchParams: Promise<{ page?: string; pageSize?: string }>;
 };
 
 
-export default async function AlbumDetailPage({ params }: PageProps) {
+export default async function AlbumDetailPage({ params, searchParams }: PageProps) {
     const resolvedParams = await params;
+    const resolvedSearchParams = await searchParams;
     const albumId = Number(resolvedParams.id);
+    const page = Number(resolvedSearchParams.page) || 1;
+    const pageSize = Number(resolvedSearchParams.pageSize) || 20;
 
     // 获取图册信息
     const album = await getAlbumById(albumId);
@@ -36,8 +41,15 @@ export default async function AlbumDetailPage({ params }: PageProps) {
     const { prevId, nextId } = await getAdjacentAlbums(albumId);
 
     // 获取图片列表
-    const images = getAlbumImages(albumId);
+    const allImages = getAlbumImages(albumId);
+    const totalImages = allImages.length;
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const images = allImages.slice(start, end);
     const storagePath = getAlbumStoragePath();
+
+    // 获取视频列表
+    const videos = getAlbumVideos(albumId);
 
     // 获取模特和工作室列表
     const models = await getModels();
@@ -86,6 +98,9 @@ export default async function AlbumDetailPage({ params }: PageProps) {
                                     {album.title || album.resource_title_raw}
                                 </h1>
                                 <div className="flex flex-wrap gap-2">
+                                    <Badge variant="outline" className="flex items-center gap-1">
+                                        <span className="h-3 w-3">#</span> {albumId}
+                                    </Badge>
                                     {album.model_name && (
                                         <Badge variant="secondary" className="flex items-center gap-1">
                                             <User className="h-3 w-3" /> {album.model_name}
@@ -106,7 +121,7 @@ export default async function AlbumDetailPage({ params }: PageProps) {
                                         <Calendar className="h-3 w-3" /> {formatDate(album.created_at)}
                                     </Badge>
                                     <Badge variant="outline" className="flex items-center gap-1">
-                                        <ImageIcon className="h-3 w-3" /> {images.length} 张图片
+                                        <ImageIcon className="h-3 w-3" /> {totalImages} 张图片
                                     </Badge>
                                 </div>
                             </div>
@@ -138,6 +153,9 @@ export default async function AlbumDetailPage({ params }: PageProps) {
                 </CardContent>
             </Card>
 
+            {/* 视频展示区域 */}
+            <AlbumVideoGallery albumId={albumId} videos={videos} />
+
             {/* 图片画廊 */}
             <Card>
                 <CardContent className="p-6">
@@ -145,6 +163,9 @@ export default async function AlbumDetailPage({ params }: PageProps) {
                         albumId={albumId}
                         images={images}
                         storagePath={storagePath}
+                        total={totalImages}
+                        page={page}
+                        pageSize={pageSize}
                     />
                 </CardContent>
             </Card>

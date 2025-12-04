@@ -16,7 +16,7 @@ export default async function LoginPage() {
 
     // If already logged in, redirect to home
     if (user) {
-        redirect('/');
+        redirect('/dashboard');
     }
 
     return (

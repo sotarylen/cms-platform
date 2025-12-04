@@ -9,7 +9,8 @@ import { StudioLogo } from "@/components/studio-logo"
 import { Pagination } from "@/components/pagination"
 import { ContentCard } from "@/components/data-display/content-card"
 import { StandardContainer } from "@/components/standard-container"
-import { PageHeader } from "@/components/page-header"
+import { PageHeader } from "@/components/layout/page-header"
+import { StudioCreateDialog } from "@/components/studio-create-dialog"
 
 interface StudiosClientProps {
     studios: AlbumStudio[];
@@ -60,7 +61,7 @@ export function StudiosClient({ studios, page, pageSize, view, search }: Studios
         <div className="space-y-6">
             <PageHeader
                 title="摄影机构"
-                description="浏览所有收录的摄影机构"
+                subtitle="浏览所有收录的摄影机构"
             />
 
             <StandardContainer
@@ -75,6 +76,7 @@ export function StudiosClient({ studios, page, pageSize, view, search }: Studios
                     view: view,
                     onViewChange: handleViewChange
                 }}
+                actionsRight={<StudioCreateDialog />}
             >
                 <div className="space-y-4">
                     {/* Studios Grid/List */}

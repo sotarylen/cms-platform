@@ -77,7 +77,7 @@ export function UserMenu({ user }: Props) {
 
                     {user.role === 'admin' && (
                         <>
-                            <Link href="/admin" className="user-menu-item">
+                            <Link href="/dashboard" className="user-menu-item">
                                 <i className="fas fa-cog"></i>
                                 后台管理
                             </Link>

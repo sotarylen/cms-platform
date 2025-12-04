@@ -4,17 +4,24 @@ import { useState, useEffect } from 'react';
 import { ImageLightbox } from './image-lightbox';
 import { setAlbumCover } from '@/app/actions/albums';
 import { toast } from 'sonner';
+import { Pagination } from './navigation/pagination';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 type Props = {
     albumId: number;
     images: string[];
     storagePath: string;
+    total: number;
+    page: number;
+    pageSize: number;
 };
 
-export function AlbumImagesGallery({ albumId, images, storagePath }: Props) {
+export function AlbumImagesGallery({ albumId, images, storagePath, total, page, pageSize }: Props) {
     const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [columns, setColumns] = useState(2);
+    const router = useRouter();
+    const searchParams = useSearchParams();
 
     // Responsive column calculation
     useEffect(() => {
@@ -48,6 +55,19 @@ export function AlbumImagesGallery({ albumId, images, storagePath }: Props) {
         }
     };
 
+    const handlePageChange = (newPage: number) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('page', newPage.toString());
+        router.push(`?${params.toString()}`);
+    };
+
+    const handlePageSizeChange = (newPageSize: number) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('pageSize', newPageSize.toString());
+        params.set('page', '1'); // Reset to first page when page size changes
+        router.push(`?${params.toString()}`);
+    };
+
     if (images.length === 0) {
         return <div className="text-center py-10 text-muted-foreground">暂无图片</div>;
     }
@@ -67,7 +87,7 @@ export function AlbumImagesGallery({ albumId, images, storagePath }: Props) {
 
     return (
         <>
-            <div className="flex gap-4 items-start">
+            <div className="flex gap-4 items-start mb-6">
                 {columnImages.map((colImages, colIndex) => (
                     <div key={colIndex} className="flex-1 flex flex-col gap-4">
                         {colImages.map((filename, i) => {
@@ -92,6 +112,19 @@ export function AlbumImagesGallery({ albumId, images, storagePath }: Props) {
                     </div>
                 ))}
             </div>
+
+            {total > 0 && (
+                <Pagination
+                    total={total}
+                    page={page}
+                    pageSize={pageSize}
+                    onPageChange={handlePageChange}
+                    onPageSizeChange={handlePageSizeChange}
+                    pageSizeOptions={[20, 50, 100]}
+                    showTotal={true}
+                    showJumpTo={true}
+                />
+            )}
 
             {lightboxOpen && (
                 <ImageLightbox

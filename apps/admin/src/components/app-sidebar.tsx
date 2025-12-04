@@ -49,14 +49,14 @@ export function AppSidebar({ className, user }: SidebarProps) {
             {
                 label: "仪表盘",
                 icon: LayoutDashboard,
-                href: "/admin",
-                active: pathname === "/admin",
+                href: "/dashboard",
+                active: pathname === "/dashboard" || pathname === "/",
             },
             {
                 label: "书籍管理",
                 icon: BookOpen,
-                href: "/",
-                active: pathname === "/" || pathname.startsWith("/books"),
+                href: "/books",
+                active: pathname.startsWith("/books"),
             },
             {
                 label: "图册管理",

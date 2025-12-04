@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation';
 import { AlbumCover } from '@/components/album-cover';
 import { Button } from '@/components/ui/button';
 import { Image as ImageIcon, Users, Building2, ArrowDownWideNarrow, ArrowUpNarrowWide, Clock } from "lucide-react"
-import type { Album, AlbumStats } from '@/lib/types';
-import { PageHeader } from '@/components/page-header';
+import { CreateAlbumDialog } from '@/components/create-album-dialog';
+import type { Album, AlbumStats, AlbumModel, AlbumStudio } from '@/lib/types';
+import { PageHeader } from '@/components/layout/page-header';
 import { StatCard } from '@/components/stat-card';
 import { ContentCard } from '@/components/data-display/content-card';
 import { Pagination } from '@/components/pagination';
@@ -24,9 +25,11 @@ interface AlbumsClientProps {
     searchQuery: string;
     sort: 'newest' | 'oldest' | 'updated';
     viewMode: 'grid' | 'list';
+    models: AlbumModel[];
+    studios: AlbumStudio[];
 }
 
-export function AlbumsClient({ stats, albumsData, searchQuery, sort, viewMode }: AlbumsClientProps) {
+export function AlbumsClient({ stats, albumsData, searchQuery, sort, viewMode, models, studios }: AlbumsClientProps) {
     const router = useRouter();
     const [searchValue, setSearchValue] = useState(searchQuery);
     const totalPages = Math.ceil(albumsData.total / albumsData.pageSize);
@@ -53,16 +56,16 @@ export function AlbumsClient({ stats, albumsData, searchQuery, sort, viewMode }:
         return `/albums?${params.toString()}`;
     };
 
-    const handlePageSizeChange = (newSize: string) => {
-        router.push(buildUrl({ pageSize: newSize, page: 1 }));
+    const handlePageSizeChange = (newSize: number) => {
+        router.push(buildUrl({ pageSize: newSize, page: 1 }) as any);
     };
 
     const handleSearch = () => {
-        router.push(buildUrl({ query: searchValue, page: 1 }));
+        router.push(buildUrl({ query: searchValue, page: 1 }) as any);
     };
 
     const handleViewChange = (view: 'grid' | 'list') => {
-        router.push(buildUrl({ view }));
+        router.push(buildUrl({ view }) as any);
     };
 
     return (
@@ -70,7 +73,7 @@ export function AlbumsClient({ stats, albumsData, searchQuery, sort, viewMode }:
             {/* Stats Section */}
             <PageHeader
                 title="图册管理"
-                description="浏览和管理所有图册、模特和机构。"
+                subtitle="浏览和管理所有图册、模特和机构。"
             />
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                 <StatCard
@@ -139,7 +142,7 @@ export function AlbumsClient({ stats, albumsData, searchQuery, sort, viewMode }:
                             title="最新修改"
                             asChild
                         >
-                            <Link href={buildUrl({ sort: 'updated', page: 1 })}>
+                            <Link href={buildUrl({ sort: 'updated', page: 1 }) as any}>
                                 <Clock className="h-4 w-4" />
                             </Link>
                         </Button>
@@ -155,6 +158,9 @@ export function AlbumsClient({ stats, albumsData, searchQuery, sort, viewMode }:
                     view: viewMode,
                     onViewChange: handleViewChange
                 }}
+                actionsRight={
+                    <CreateAlbumDialog models={models} studios={studios} />
+                }
             >
                 <div className="space-y-4">
                     {/* Albums Grid/List */}
@@ -260,7 +266,7 @@ export function AlbumsClient({ stats, albumsData, searchQuery, sort, viewMode }:
                                 page={albumsData.page}
                                 pageSize={albumsData.pageSize}
                                 onPageChange={(newPage) => {
-                                    router.push(buildUrl({ page: newPage }));
+                                    router.push(buildUrl({ page: newPage }) as any);
                                 }}
                                 onPageSizeChange={handlePageSizeChange}
                                 pageSizeOptions={[12, 24, 36, 48]}

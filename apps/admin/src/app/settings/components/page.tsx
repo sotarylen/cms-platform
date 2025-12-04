@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { StatCard } from '@/components/stat-card';
@@ -14,6 +15,7 @@ import { SearchBar } from '@/components/search-bar';
 import { ContentCard } from '@/components/data-display/content-card';
 import { DetailNavBar } from '@/components/navigation/detail-nav-bar';
 import { StandardContainer } from '@/components/standard-container';
+import { EditDialog } from '@/components/forms/edit-dialog';
 import {
     LayoutGrid,
     List,
@@ -31,7 +33,8 @@ import {
     Film,
     Info,
     CheckCircle,
-    Settings
+    Settings,
+    Edit
 } from 'lucide-react';
 
 export default function ComponentsShowcasePage() {
@@ -39,6 +42,34 @@ export default function ComponentsShowcasePage() {
     const [fullPage, setFullPage] = useState(1);
     const [fullPageSize, setFullPageSize] = useState(20);
     const [compactPage, setCompactPage] = useState(3);
+
+    // EditDialog demo state
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [editDialogLoading, setEditDialogLoading] = useState(false);
+    const [editDialogError, setEditDialogError] = useState<string | null>(null);
+    const [demoName, setDemoName] = useState('');
+    const [demoEmail, setDemoEmail] = useState('');
+
+    const handleEditDialogSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setEditDialogError(null);
+        setEditDialogLoading(true);
+
+        // 模拟 API 调用
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // 模拟验证
+        if (!demoName.trim()) {
+            setEditDialogError('姓名不能为空');
+            setEditDialogLoading(false);
+            return;
+        }
+
+        setEditDialogLoading(false);
+        setIsEditDialogOpen(false);
+        setDemoName('');
+        setDemoEmail('');
+    };
 
     return (
         <div className="space-y-8">
@@ -588,6 +619,141 @@ export default function ComponentsShowcasePage() {
                     </div>
                 </div>
             </section>
+
+            <Separator />
+
+            {/* Form Components */}
+            <section className="space-y-4">
+                <div>
+                    <h2 className="text-2xl font-semibold mb-1">表单组件</h2>
+                    <p className="text-sm text-muted-foreground">
+                        用于数据输入和编辑的标准化表单组件
+                    </p>
+                </div>
+
+                {/* EditDialog */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>EditDialog 编辑弹窗</CardTitle>
+                        <CardDescription>
+                            统一的编辑弹窗组件，包含标题、描述、表单内容、错误提示和操作按钮
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="text-xs text-muted-foreground mb-2">
+                            <code className="px-2 py-1 bg-muted rounded">components/forms/edit-dialog.tsx</code>
+                        </div>
+
+                        <div className="space-y-4">
+                            <p className="text-sm font-medium">功能特性</p>
+                            <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                                <li>统一的标题和描述显示</li>
+                                <li>内置加载状态和禁用逻辑</li>
+                                <li>错误信息展示（支持深色模式）</li>
+                                <li>可自定义按钮文本和弹窗宽度</li>
+                                <li>自动处理表单提交</li>
+                            </ul>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-3">
+                            <p className="text-sm font-medium">交互演示</p>
+                            <p className="text-xs text-muted-foreground">
+                                点击按钮打开编辑弹窗，体验加载状态和错误提示
+                            </p>
+                            <Button
+                                onClick={() => {
+                                    setDemoName('');
+                                    setDemoEmail('');
+                                    setEditDialogError(null);
+                                    setIsEditDialogOpen(true);
+                                }}
+                                className="gap-2"
+                            >
+                                <Edit className="h-4 w-4" />
+                                打开编辑弹窗
+                            </Button>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium">使用示例</p>
+                            <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto">
+                                <code>{`<EditDialog
+  isOpen={isOpen}
+  onClose={() => setIsOpen(false)}
+  title="编辑用户"
+  description="修改用户信息"
+  onSubmit={handleSubmit}
+  loading={loading}
+  error={error}
+>
+  <div className="grid gap-4 py-4">
+    <div className="grid grid-cols-4 items-center gap-4">
+      <Label htmlFor="name" className="text-right">
+        姓名
+      </Label>
+      <Input
+        id="name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="col-span-3"
+      />
+    </div>
+  </div>
+</EditDialog>`}</code>
+                            </pre>
+                        </div>
+                    </CardContent>
+                </Card>
+            </section>
+
+            {/* EditDialog Demo Instance */}
+            <EditDialog
+                isOpen={isEditDialogOpen}
+                onClose={() => {
+                    setIsEditDialogOpen(false);
+                    setEditDialogError(null);
+                }}
+                title="编辑用户信息"
+                onSubmit={handleEditDialogSubmit}
+                loading={editDialogLoading}
+                error={editDialogError}
+            >
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="demo-name" className="text-right">
+                            姓名 *
+                        </Label>
+                        <Input
+                            id="demo-name"
+                            value={demoName}
+                            onChange={(e) => setDemoName(e.target.value)}
+                            className="col-span-3"
+                            placeholder="请输入姓名"
+                            required
+                        />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="demo-email" className="text-right">
+                            邮箱
+                        </Label>
+                        <Input
+                            id="demo-email"
+                            type="email"
+                            value={demoEmail}
+                            onChange={(e) => setDemoEmail(e.target.value)}
+                            className="col-span-3"
+                            placeholder="user@example.com"
+                        />
+                    </div>
+                    <div className="col-span-4 text-xs text-muted-foreground">
+                        💡 提示：留空姓名字段并点击保存，可以看到错误提示
+                    </div>
+                </div>
+            </EditDialog>
         </div>
     );
 }

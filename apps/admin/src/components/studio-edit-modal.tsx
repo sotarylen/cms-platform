@@ -2,22 +2,12 @@
 
 import { useState, useRef } from 'react';
 import type { AlbumStudio } from '@/lib/types';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
+import { EditDialog } from '@/components/forms/edit-dialog';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, Upload, Image as ImageIcon, Save } from "lucide-react"
-
-
+import { Upload, Image as ImageIcon } from "lucide-react"
 
 type Props = {
     studio: AlbumStudio;
@@ -110,141 +100,107 @@ export function StudioEditModal({ studio, onClose, onSuccess, open }: Props) {
     };
 
     return (
-        <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-            <DialogContent className="sm:max-w-[800px]">
-                <DialogHeader>
-                    <DialogTitle>编辑工作室信息</DialogTitle>
-                    <DialogDescription>
-                        更新 {studio.studio_name} 的基本信息。
-                    </DialogDescription>
-                </DialogHeader>
-
-                <form onSubmit={handleSubmit} className="py-4">
-                    {error && (
-                        <Alert variant="destructive" className="mb-4">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                    )}
-
-                    <div className="grid grid-cols-[240px_1fr] gap-6">
-                        {/* Left Column: Logo Preview */}
-                        <div className="space-y-4">
-                            <Label>Logo 预览</Label>
-                            <div className="aspect-square relative rounded-lg overflow-hidden border bg-muted shadow-sm group flex items-center justify-center">
-                                {coverPreview ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img
-                                        src={coverPreview}
-                                        alt="Logo Preview"
-                                        className="w-full h-full object-contain p-2"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center text-muted-foreground p-4 text-center">
-                                        <ImageIcon className="h-12 w-12 mb-2 opacity-50" />
-                                        <span className="text-sm">暂无 Logo</span>
-                                    </div>
-                                )}
+        <EditDialog
+            isOpen={open}
+            onClose={onClose}
+            title="编辑工作室信息"
+            onSubmit={handleSubmit}
+            loading={isSubmitting}
+            error={error}
+            maxWidth="sm:max-w-[800px]"
+        >
+            <div className="grid grid-cols-[240px_1fr] gap-6 py-4">
+                {/* Left Column: Logo Preview */}
+                <div className="space-y-4">
+                    <Label>Logo 预览</Label>
+                    <div className="aspect-square relative rounded-lg overflow-hidden border bg-muted shadow-sm group flex items-center justify-center">
+                        {coverPreview ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                                src={coverPreview}
+                                alt="Logo Preview"
+                                className="w-full h-full object-contain p-2"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                            />
+                        ) : (
+                            <div className="flex flex-col items-center justify-center text-muted-foreground p-4 text-center">
+                                <ImageIcon className="h-12 w-12 mb-2 opacity-50" />
+                                <span className="text-sm">暂无 Logo</span>
                             </div>
-
-                            <div className="flex gap-2">
-                                <Input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleFileChange}
-                                    accept="image/*"
-                                    className="hidden"
-                                />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="w-full"
-                                >
-                                    <Upload className="mr-2 h-4 w-4" />
-                                    {coverFile ? '更换图片' : '上传 Logo'}
-                                </Button>
-                            </div>
-                            {coverFile && (
-                                <p className="text-xs text-muted-foreground text-center truncate px-2">
-                                    已选择: {coverFile.name}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Right Column: Form Fields */}
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="studio-name">工作室名称</Label>
-                                <Input
-                                    id="studio-name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="输入工作室名称"
-                                    required
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="studio-intro">简介</Label>
-                                <Textarea
-                                    id="studio-intro"
-                                    value={intro}
-                                    onChange={(e) => setIntro(e.target.value)}
-                                    rows={8}
-                                    placeholder="输入工作室简介..."
-                                    className="resize-none"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="studio-cover">Logo URL (可选)</Label>
-                                <Input
-                                    id="studio-cover"
-                                    type="text"
-                                    value={coverUrl}
-                                    onChange={(e) => {
-                                        setCoverUrl(e.target.value);
-                                        setCoverPreview(e.target.value);
-                                        setCoverFile(null);
-                                    }}
-                                    placeholder="https://example.com/logo.jpg"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    如果上传了图片，此 URL 将被忽略。
-                                </p>
-                            </div>
-                        </div>
+                        )}
                     </div>
 
-                    <DialogFooter className="mt-6">
+                    <div className="flex gap-2">
+                        <Input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            accept="image/*"
+                            className="hidden"
+                        />
                         <Button
                             type="button"
-                            variant="secondary"
-                            onClick={onClose}
-                            disabled={isSubmitting}
+                            variant="outline"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full"
                         >
-                            取消
+                            <Upload className="mr-2 h-4 w-4" />
+                            {coverFile ? '更换图片' : '上传 Logo'}
                         </Button>
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting ? (
-                                <>保存中...</>
-                            ) : (
-                                <>
-                                    <Save className="mr-2 h-4 w-4" />
-                                    保存
-                                </>
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+                    </div>
+                    {coverFile && (
+                        <p className="text-xs text-muted-foreground text-center truncate px-2">
+                            已选择: {coverFile.name}
+                        </p>
+                    )}
+                </div>
+
+                {/* Right Column: Form Fields */}
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="studio-name">工作室名称</Label>
+                        <Input
+                            id="studio-name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="输入工作室名称"
+                            required
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="studio-intro">简介</Label>
+                        <Textarea
+                            id="studio-intro"
+                            value={intro}
+                            onChange={(e) => setIntro(e.target.value)}
+                            rows={8}
+                            placeholder="输入工作室简介..."
+                            className="resize-none"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="studio-cover">Logo URL (可选)</Label>
+                        <Input
+                            id="studio-cover"
+                            type="text"
+                            value={coverUrl}
+                            onChange={(e) => {
+                                setCoverUrl(e.target.value);
+                                setCoverPreview(e.target.value);
+                                setCoverFile(null);
+                            }}
+                            placeholder="https://example.com/logo.jpg"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            如果上传了图片，此 URL 将被忽略。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </EditDialog>
     );
 }

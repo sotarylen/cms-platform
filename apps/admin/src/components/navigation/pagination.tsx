@@ -178,7 +178,7 @@ export function Pagination({
 
     // 完整模式
     return (
-        <div className={cn('flex items-center justify-between px-2', className)}>
+        <div className={cn('flex items-center justify-between px-2 border-t pt-4', className)}>
             {/* 总数显示 */}
             {showTotal && (
                 <div className="text-sm text-muted-foreground">

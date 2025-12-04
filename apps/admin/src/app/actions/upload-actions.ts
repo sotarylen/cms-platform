@@ -34,3 +34,35 @@ export async function uploadAlbumCoverAction(albumId: number, formData: FormData
         return { success: false, error: 'Failed to upload cover' };
     }
 }
+
+export async function uploadStudioLogo(formData: FormData) {
+    try {
+        const file = formData.get('file') as File;
+        if (!file) {
+            return { success: false, error: 'No file provided' };
+        }
+
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const filename = `studio-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+
+        // Store in a public directory for studio logos
+        const publicPath = path.join(process.cwd(), 'public', 'uploads', 'studios');
+
+        // Ensure directory exists
+        const fs = require('fs');
+        if (!fs.existsSync(publicPath)) {
+            fs.mkdirSync(publicPath, { recursive: true });
+        }
+
+        const filePath = path.join(publicPath, filename);
+        await writeFile(filePath, buffer);
+
+        // Return public URL
+        const logoUrl = `/uploads/studios/${filename}`;
+
+        return { success: true, url: logoUrl };
+    } catch (error) {
+        console.error('Failed to upload studio logo:', error);
+        return { success: false, error: 'Failed to upload logo' };
+    }
+}

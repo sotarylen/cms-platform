@@ -59,5 +59,5 @@ export async function registerAction(data: RegisterData) {
 
 export async function logoutAction() {
     await deleteSession();
-    redirect('/');
+    redirect('/dashboard');
 }

@@ -3,6 +3,7 @@ import type {
     Album,
     AlbumStudio,
     AlbumStats,
+    AlbumModel,
 } from '@/lib/types';
 import { getAlbumImageCount } from '@/lib/album-images';
 
@@ -81,9 +82,32 @@ export async function getAlbums({
     page: number;
     pageSize: number;
 }> {
-    const [countRow] = await query<Array<{ total: number }>>(
-        'SELECT COUNT(*) AS total FROM n8n_albums'
-    );
+    // Build WHERE clause for search
+    const whereConditions: string[] = [];
+    const queryParams: any[] = [];
+
+    if (searchQuery && searchQuery.trim()) {
+        whereConditions.push(`(
+            a.resource_title_raw LIKE ? OR 
+            a.resource_title_cleaned LIKE ? OR 
+            s.studio_name LIKE ? OR 
+            m.model_name LIKE ?
+        )`);
+        const searchPattern = `%${searchQuery.trim()}%`;
+        queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    // Count total with search filter
+    const countSql = `
+        SELECT COUNT(*) AS total 
+        FROM n8n_albums a
+        LEFT JOIN n8n_album_studios s ON a.studio_id = s.studio_id
+        LEFT JOIN n8n_album_models m ON a.model = m.model_id
+        ${whereClause}
+    `;
+    const [countRow] = await query<Array<{ total: number }>>(countSql, queryParams);
     const total = Number(countRow?.total ?? 0);
     const safePage = Math.max(1, page);
     const offset = (safePage - 1) * pageSize;
@@ -95,20 +119,20 @@ export async function getAlbums({
         orderBy = 'a.updated_at DESC';
     }
 
-    const rows = await query<any[]>(
-        `
-    SELECT
-      a.*,
-      s.studio_name,
-      m.model_name
-    FROM n8n_albums a
-    LEFT JOIN n8n_album_studios s ON a.studio_id = s.studio_id
-    LEFT JOIN n8n_album_models m ON a.model = m.model_id
-    ORDER BY ${orderBy}
-    LIMIT ? OFFSET ?
-    `,
-        [pageSize, offset]
-    );
+    // Select with search filter
+    const selectSql = `
+        SELECT
+          a.*,
+          s.studio_name,
+          m.model_name
+        FROM n8n_albums a
+        LEFT JOIN n8n_album_studios s ON a.studio_id = s.studio_id
+        LEFT JOIN n8n_album_models m ON a.model = m.model_id
+        ${whereClause}
+        ORDER BY ${orderBy}
+        LIMIT ? OFFSET ?
+    `;
+    const rows = await query<any[]>(selectSql, [...queryParams, pageSize, offset]);
 
     const items: Album[] = await Promise.all(rows.map(async (row) => ({
         id: row.album_id,
@@ -301,6 +325,28 @@ export const updateStudio = async (
     );
 };
 
+export const createStudio = async (data: {
+    studio_name: string;
+    studio_intro?: string;
+    studio_cover_url?: string;
+}): Promise<number> => {
+    const result = await query<any>(
+        `INSERT INTO n8n_album_studios (
+            studio_name, 
+            studio_intro,
+            studio_cover_url, 
+            created_at, 
+            updated_at
+        ) VALUES (?, ?, ?, NOW(), NOW())`,
+        [
+            data.studio_name,
+            data.studio_intro || null,
+            data.studio_cover_url || null
+        ]
+    );
+    return result.insertId;
+};
+
 export const getAdjacentAlbums = async (currentId: number): Promise<{ prevId: number | null; nextId: number | null }> => {
     const [prevRow] = await query<Array<{ album_id: number }>>(
         'SELECT album_id FROM n8n_albums WHERE album_id < ? ORDER BY album_id DESC LIMIT 1',
@@ -398,6 +444,36 @@ export const createModel = async (name: string): Promise<number> => {
     const result = await query<any>(
         'INSERT INTO n8n_album_models (model_name, created_at, updated_at) VALUES (?, NOW(), NOW())',
         [name]
+    );
+    return result.insertId;
+};
+
+export const createAlbum = async (data: {
+    title: string;
+    model?: number;
+    studio_id?: number;
+    source_page_url?: string;
+    resource_url?: string;
+}): Promise<number> => {
+    const result = await query<any>(
+        `INSERT INTO n8n_albums (
+            resource_title_raw, 
+            resource_title_cleaned, 
+            model, 
+            studio_id, 
+            source_page_url, 
+            resource_url,
+            created_at, 
+            updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        [
+            data.title,
+            data.title, // Use title for both raw and cleaned initially
+            data.model || null,
+            data.studio_id || null,
+            data.source_page_url || null,
+            data.resource_url || `local://new-album-${Date.now()}-${Math.floor(Math.random() * 1000)}` // Generate unique URL
+        ]
     );
     return result.insertId;
 };

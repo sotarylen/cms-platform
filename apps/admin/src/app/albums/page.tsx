@@ -1,4 +1,4 @@
-import { getAlbumStats, getAlbums } from '@/lib/data/albums';
+import { getAlbumStats, getAlbums, getModels, getStudios } from '@/lib/data/albums';
 import { AlbumsClient } from '@/components/albums-client';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +21,17 @@ export default async function AlbumsDashboard({ searchParams }: { searchParams: 
     const viewMode = viewModeParam ?? 'grid';
 
     const stats = await getAlbumStats();
-    const albumsData = await getAlbums({ page, pageSize, sort });
+    const albumsData = await getAlbums({ page, pageSize, sort, query: searchQuery });
+    const models = await getModels();
+    const studios = await getStudios();
 
-    return <AlbumsClient stats={stats} albumsData={albumsData} searchQuery={searchQuery} sort={sort} viewMode={viewMode} />;
+    return <AlbumsClient
+        stats={stats}
+        albumsData={albumsData}
+        searchQuery={searchQuery}
+        sort={sort}
+        viewMode={viewMode}
+        models={models}
+        studios={studios}
+    />;
 }

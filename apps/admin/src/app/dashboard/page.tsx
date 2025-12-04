@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { StatCard } from "@/components/stat-card"
 import { ContentCard } from "@/components/data-display/content-card"
-import { PageHeader } from "@/components/page-header"
+import { PageHeader } from "@/components/layout/page-header"
 import { StandardContainer } from "@/components/standard-container"
 import TriggerButton from "@/components/trigger-button"
 import { StatusPill } from "@/components/status-pill"
@@ -24,7 +24,7 @@ export default async function AdminPage() {
         <div className="space-y-8">
             <PageHeader
                 title="仪表盘"
-                description="欢迎回来！这里是系统概览。"
+                subtitle="欢迎回来！这里是系统概览。"
             />
 
             {/* Stats Overview */}
@@ -60,7 +60,7 @@ export default async function AdminPage() {
                 title="最新书籍"
                 actionsRight={
                     <Button variant="default" size="sm" asChild>
-                        <Link href="/">
+                        <Link href="/books">
                             查看全部 <ArrowRight className="ml-2 h-4 w-4" />
                         </Link>
                     </Button>

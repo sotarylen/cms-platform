@@ -2,38 +2,35 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Edit, Loader2, Upload, Trash2 } from 'lucide-react';
-import { Album, AlbumModel, AlbumStudio } from '@/lib/types';
-import { updateAlbumAction, deleteAlbumAction } from '@/app/actions/album-actions';
-import { uploadAlbumCoverAction } from '@/app/actions/upload-actions';
+import { Loader2, Upload, Plus, PlusCircle } from 'lucide-react';
+import { AlbumModel, AlbumStudio } from '@/lib/types';
+import { createAlbumAction } from '@/app/actions/album-actions';
 import { Button } from '@/components/ui/button';
 import { EditDialog } from '@/components/forms/edit-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
-interface AlbumEditDialogProps {
-    album: Album;
+interface CreateAlbumDialogProps {
     models: AlbumModel[];
     studios: AlbumStudio[];
 }
 
-export function AlbumEditDialog({ album, models, studios }: AlbumEditDialogProps) {
+export function CreateAlbumDialog({ models, studios }: CreateAlbumDialogProps) {
     const [open, setOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+    const [continueAdding, setContinueAdding] = useState(false);
     const router = useRouter();
 
     const [formData, setFormData] = useState({
-        title: album.title || album.resource_title_raw,
-        modelName: album.model_name || '',
-        studioName: album.studio_name || '',
-        resource_url: album.resource_url || '',
-        source_page_url: album.source_page_url || '',
+        title: '',
+        modelName: '',
+        studioName: '',
+        source_page_url: '',
     });
     const [coverFile, setCoverFile] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string>(album.source_page_url || '');
+    const [previewUrl, setPreviewUrl] = useState<string>('');
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -44,35 +41,10 @@ export function AlbumEditDialog({ album, models, studios }: AlbumEditDialogProps
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
+    const performSave = async () => {
         setError(null);
 
         try {
-            let coverUrl = formData.source_page_url;
-
-            // Upload cover if selected
-            if (coverFile) {
-                const uploadFormData = new FormData();
-                uploadFormData.append('file', coverFile);
-                const uploadResult = await uploadAlbumCoverAction(album.id, uploadFormData);
-                if (uploadResult.success && uploadResult.url) {
-                    coverUrl = uploadResult.url;
-                } else {
-                    setError('封面上传失败');
-                    setIsLoading(false);
-                    return;
-                }
-            }
-
-            // Find model ID by name, or use the name to create new one
-            let modelValue: number | string | undefined;
-            if (formData.modelName.trim()) {
-                const matchedModel = models.find(m => m.name.toLowerCase() === formData.modelName.toLowerCase());
-                modelValue = matchedModel ? matchedModel.id : formData.modelName;
-            }
-
             // Find studio ID by name
             let studioId: number | undefined;
             if (formData.studioName.trim()) {
@@ -81,88 +53,113 @@ export function AlbumEditDialog({ album, models, studios }: AlbumEditDialogProps
 
                 if (!matchedStudio) {
                     setError(`工作室 "${formData.studioName}" 不存在，请选择已有工作室`);
-                    setIsLoading(false);
-                    return;
+                    return false;
                 }
             }
 
-            const result = await updateAlbumAction(album.id, {
+            const payload = {
                 title: formData.title,
-                model: modelValue,
+                model: formData.modelName,
                 studio_id: studioId,
-                resource_url: formData.resource_url,
-                source_page_url: coverUrl,
-            });
+                source_page_url: formData.source_page_url,
+            };
+
+            let coverFormData: FormData | undefined;
+            if (coverFile) {
+                coverFormData = new FormData();
+                coverFormData.append('file', coverFile);
+            }
+
+            const result = await createAlbumAction(payload, coverFormData);
 
             if (result.success) {
-                toast.success('图册更新成功');
-                setOpen(false);
-                setCoverFile(null);
-                router.refresh();
+                return true;
             } else {
-                setError('更新失败');
+                setError(result.error || '创建失败');
+                return false;
             }
         } catch (error) {
             setError('发生错误');
-        } finally {
-            setIsLoading(false);
+            return false;
         }
     };
 
-    const handleDelete = async () => {
-        const confirmed = window.confirm(
-            `确认删除图册 "${album.title || album.resource_title_raw}"？\n\n此操作将永久删除图册及其所有文件，无法撤销。`
-        );
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
 
-        if (!confirmed) return;
+        const success = await performSave();
 
-        setIsDeleting(true);
-        try {
-            const result = await deleteAlbumAction(album.id);
-            if (result.success) {
-                toast.success('图册已删除');
-                setOpen(false);
-                router.push('/albums');
-                router.refresh();
-            } else {
-                toast.error(result.error || '删除失败');
-            }
-        } catch (error) {
-            toast.error('删除失败');
-        } finally {
-            setIsDeleting(false);
+        if (success) {
+            toast.success('图册创建成功');
+            setOpen(false);
+            // Reset form
+            setFormData({
+                title: '',
+                modelName: '',
+                studioName: '',
+                source_page_url: '',
+            });
+            setCoverFile(null);
+            setPreviewUrl('');
+            router.refresh();
         }
+
+        setIsLoading(false);
+    };
+
+    const handleContinueAdding = async () => {
+        setContinueAdding(true);
+        setIsLoading(true);
+
+        const success = await performSave();
+
+        if (success) {
+            toast.success('图册创建成功，继续添加');
+            // Only reset title and cover, keep model and studio
+            setFormData({
+                ...formData,
+                title: '',
+                source_page_url: '',
+            });
+            setCoverFile(null);
+            setPreviewUrl('');
+            router.refresh();
+        }
+
+        setIsLoading(false);
+        setContinueAdding(false);
     };
 
     return (
         <>
-            <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-                <Edit className="mr-2 h-4 w-4" /> 编辑
+            <Button onClick={() => setOpen(true)} size="icon">
+                <Plus className="h-4 w-4" />
             </Button>
             <EditDialog
                 isOpen={open}
                 onClose={() => setOpen(false)}
-                title="编辑图册信息"
+                title="添加新图册"
                 onSubmit={handleSubmit}
                 loading={isLoading}
                 error={error}
                 maxWidth="sm:max-w-[800px]"
-                leftActions={
+                rightActions={
                     <Button
                         type="button"
-                        variant="destructive"
-                        onClick={handleDelete}
-                        disabled={isLoading || isDeleting}
+                        variant="outline"
+                        onClick={handleContinueAdding}
+                        disabled={isLoading}
                     >
-                        {isDeleting ? (
+                        {continueAdding ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                删除中...
+                                保存中...
                             </>
                         ) : (
                             <>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                删除图册
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                继续添加
                             </>
                         )}
                     </Button>
@@ -190,26 +187,27 @@ export function AlbumEditDialog({ album, models, studios }: AlbumEditDialogProps
                     {/* Right Column: Form Fields */}
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="title">标题</Label>
+                            <Label htmlFor="create-title">标题 <span className="text-red-500">*</span></Label>
                             <Input
-                                id="title"
+                                id="create-title"
                                 value={formData.title}
                                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                placeholder="输入图册标题"
                                 required
                             />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="modelName">模特</Label>
+                                <Label htmlFor="create-modelName">模特</Label>
                                 <Input
-                                    id="modelName"
+                                    id="create-modelName"
                                     value={formData.modelName}
                                     onChange={(e) => setFormData({ ...formData, modelName: e.target.value })}
                                     placeholder="输入模特名称"
-                                    list="model-suggestions"
+                                    list="create-model-suggestions"
                                 />
-                                <datalist id="model-suggestions">
+                                <datalist id="create-model-suggestions">
                                     {models.map(m => (
                                         <option key={m.id} value={m.name} />
                                     ))}
@@ -220,15 +218,15 @@ export function AlbumEditDialog({ album, models, studios }: AlbumEditDialogProps
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="studioName">工作室</Label>
+                                <Label htmlFor="create-studioName">工作室</Label>
                                 <Input
-                                    id="studioName"
+                                    id="create-studioName"
                                     value={formData.studioName}
                                     onChange={(e) => setFormData({ ...formData, studioName: e.target.value })}
                                     placeholder="输入工作室名称"
-                                    list="studio-suggestions"
+                                    list="create-studio-suggestions"
                                 />
-                                <datalist id="studio-suggestions">
+                                <datalist id="create-studio-suggestions">
                                     {studios.map(s => (
                                         <option key={s.studio_id} value={s.studio_name} />
                                     ))}
@@ -268,15 +266,6 @@ export function AlbumEditDialog({ album, models, studios }: AlbumEditDialogProps
                                     已选择新文件: {coverFile.name}
                                 </p>
                             )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="resource_url">原文链接</Label>
-                            <Input
-                                id="resource_url"
-                                value={formData.resource_url}
-                                onChange={(e) => setFormData({ ...formData, resource_url: e.target.value })}
-                            />
                         </div>
                     </div>
                 </div>

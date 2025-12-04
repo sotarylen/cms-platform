@@ -8,7 +8,7 @@ export default async function RegisterPage() {
 
     // If already logged in, redirect to home
     if (user) {
-        redirect('/');
+        redirect('/dashboard');
     }
 
     return (

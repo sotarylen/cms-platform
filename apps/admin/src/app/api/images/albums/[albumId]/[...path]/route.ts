@@ -5,11 +5,14 @@ import { getAlbumStoragePath } from '@/lib/config';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ albumId: string; filename: string }> }
+    { params }: { params: Promise<{ albumId: string; path: string[] }> }
 ) {
     try {
         const resolvedParams = await params;
-        const { albumId, filename } = resolvedParams;
+        const { albumId, path: pathSegments } = resolvedParams;
+
+        // 将路径段数组连接成完整路径
+        const filename = pathSegments.join('/');
 
         // 获取存储路径
         const storagePath = getAlbumStoragePath();
@@ -17,7 +20,8 @@ export async function GET(
 
         // 安全检查：防止目录遍历攻击
         const normalizedPath = path.normalize(filePath);
-        if (!normalizedPath.startsWith(storagePath)) {
+        const albumBasePath = path.join(storagePath, albumId);
+        if (!normalizedPath.startsWith(albumBasePath)) {
             return new NextResponse('Access denied', { status: 403 });
         }
 
@@ -49,6 +53,12 @@ export async function GET(
                 break;
             case '.svg':
                 contentType = 'image/svg+xml';
+                break;
+            case '.mp4':
+                contentType = 'video/mp4';
+                break;
+            case '.webm':
+                contentType = 'video/webm';
                 break;
         }
 
