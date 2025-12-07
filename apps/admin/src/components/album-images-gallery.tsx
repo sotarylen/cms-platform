@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ImageLightbox } from './image-lightbox';
-import { setAlbumCover } from '@/app/actions/albums';
+import { setAlbumCover, deleteAlbumImage } from '@/app/actions/albums';
 import { toast } from 'sonner';
 import { Pagination } from './navigation/pagination';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -52,6 +52,19 @@ export function AlbumImagesGallery({ albumId, images, storagePath, total, page, 
             toast.success('设置封面成功！');
         } else {
             toast.error('设置封面失败');
+        }
+    };
+
+    const handleDelete = async (index: number) => {
+        const filename = images[index];
+
+        const result = await deleteAlbumImage(albumId, filename);
+        if (result.success) {
+            toast.success('图片已删除');
+            setLightboxOpen(false);
+            router.refresh();
+        } else {
+            toast.error(result.error || '删除失败');
         }
     };
 
@@ -132,6 +145,9 @@ export function AlbumImagesGallery({ albumId, images, storagePath, total, page, 
                     initialIndex={selectedImageIndex}
                     onClose={() => setLightboxOpen(false)}
                     onSetCover={handleSetCover}
+                    onDelete={handleDelete}
+                    albumId={albumId}
+                    imageFilenames={images}
                 />
             )}
         </>

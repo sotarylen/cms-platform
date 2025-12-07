@@ -178,7 +178,7 @@ export default function BooksTabs({
                           <span className="text-sm font-semibold text-muted-foreground">#{book.id}</span>
                         </td>
                         <td className="p-4 align-middle">
-                          <Link href={`/books/${book.id}`} className="font-medium hover:underline">
+                          <Link href={`/books/${book.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
                             {book.name}
                           </Link>
                         </td>

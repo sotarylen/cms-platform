@@ -3,25 +3,17 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AlbumCover } from '@/components/album-cover';
 import { StudioEditModal } from '@/components/studio-edit-modal';
 import type { Album, AlbumStudio } from '@/lib/types';
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardFooter,
-} from "@/components/ui/card";
-import { ArrowLeft, Edit, ExternalLink, List } from "lucide-react"
-import { StudioLogo } from '@/components/studio-logo';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { ArrowLeft, Building2, List, Edit, ExternalLink } from 'lucide-react';
 import { Pagination } from '@/components/pagination';
 import { DetailNavBar } from '@/components/navigation/detail-nav-bar';
-import { formatDate } from '@/lib/utils';
-import { ContentCard } from '@/components/data-display/content-card';
+import { AlbumGrid } from '@/components/album/album-grid';
 import { StandardContainer } from '@/components/standard-container';
+import { StudioLogo } from '@/components/studio-logo';
 
 type Props = {
     studio: AlbumStudio;
@@ -131,27 +123,10 @@ export function StudioDetailClient({ studio: initialStudio, albums, total, page,
                         </div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                                {albums.filter(album => album.id && album.id !== 0).map((album) => (
-                                    <ContentCard
-                                        key={album.id}
-                                        title={album.resource_title_raw}
-                                        image={album.source_page_url || null}
-                                        href={`/albums/${album.id}`}
-                                        subtitle={
-                                            <div className="flex flex-wrap gap-1">
-                                                {album.studio_name && (
-                                                    <span>{album.studio_name}</span>
-                                                )}
-                                                {album.studio_name && album.model_name && <span>•</span>}
-                                                {album.model_name && (
-                                                    <span>{album.model_name}</span>
-                                                )}
-                                            </div>
-                                        }
-                                    />
-                                ))}
-                            </div>
+                            <AlbumGrid
+                                albums={albums}
+                                emptyMessage="该工作室暂无图册"
+                            />
 
                             <Pagination
                                 total={total}

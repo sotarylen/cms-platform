@@ -59,6 +59,8 @@ export type DashboardStats = {
   scripts: number;
   albums: number;
   studios: number;
+  chapters: number;
+  summaries: number;
 };
 
 export type ChapterContent = {
@@ -109,15 +111,19 @@ export interface Album {
   // Joined fields
   studio_name?: string;
   model_name?: string;
+  model_id?: number;  // Alias for model field
   image_count?: number;
+  video_count?: number;
 }
 
 
 export type AlbumModel = {
-  id: number;
-  name: string;
-  studio_id: number | null;
-  profile_page_url: string | null;
+  model_id: number;
+  model_name: string;
+  model_alias?: string;
+  model_intro?: string;
+  model_cover_url?: string;
+  album_count?: number;
   created_at: Date;
   updated_at: Date;
 };
@@ -137,6 +143,8 @@ export type AlbumStats = {
   albums: number;
   models: number;
   studios: number;
+  todayNew: number;
+  recentUpdate: string;
 };
 
 // User types for authentication
@@ -188,4 +196,5 @@ export type WebhookConfig = {
 export type Settings = {
   webhooks: WebhookConfig[];
   albumStoragePath: string;
+  albumImportPath?: string;
 };

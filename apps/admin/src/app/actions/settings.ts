@@ -7,6 +7,7 @@ import {
     saveWebhook,
     deleteWebhook,
     setAlbumStoragePath,
+    setAlbumImportPath,
 } from '@/lib/config';
 import type { WebhookConfig } from '@/lib/types';
 
@@ -59,6 +60,23 @@ export async function updateAlbumStoragePathAction(path: string) {
         return { success: true };
     } catch (error) {
         console.error('Update storage path error:', error);
+        return { success: false, error: '保存失败' };
+    }
+}
+
+export async function updateAlbumImportPathAction(path: string) {
+    try {
+        await requireAdmin();
+
+        if (!path || path.trim() === '') {
+            return { success: false, error: '路径不能为空' };
+        }
+
+        setAlbumImportPath(path);
+        revalidatePath('/admin/settings');
+        return { success: true };
+    } catch (error) {
+        console.error('Update import path error:', error);
         return { success: false, error: '保存失败' };
     }
 }

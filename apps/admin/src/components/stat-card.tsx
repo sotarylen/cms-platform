@@ -10,6 +10,10 @@ interface StatCardProps {
 }
 
 export function StatCard({ title, value, icon: Icon, gradient = "from-primary/10 to-primary/5" }: StatCardProps) {
+    // Check if value contains pipe separator for two-line display
+    const hasTwoLines = typeof value === 'string' && value.includes('|');
+    const [mainValue, unit] = hasTwoLines ? (value as string).split('|') : [value, null];
+
     return (
         <Card className="relative overflow-hidden">
             {/* Background gradient */}
@@ -27,13 +31,24 @@ export function StatCard({ title, value, icon: Icon, gradient = "from-primary/10
                 </CardTitle>
             </CardHeader>
             <CardContent className="relative">
-                <div className="text-5xl font-bold text-foreground">
-                    {typeof value === 'number' ? (
-                        <AnimatedNumber value={value} duration={1000} />
-                    ) : (
-                        value
-                    )}
-                </div>
+                {hasTwoLines ? (
+                    <div className="flex flex-col">
+                        <div className="text-5xl font-bold text-foreground leading-none">
+                            {mainValue}
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                            {unit}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-5xl font-bold text-foreground">
+                        {typeof value === 'number' ? (
+                            <AnimatedNumber value={value} duration={1000} />
+                        ) : (
+                            value
+                        )}
+                    </div>
+                )}
             </CardContent>
         </Card>
     )

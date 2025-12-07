@@ -74,12 +74,12 @@ export function BookChaptersSection({ bookId, initialChapters }: ChaptersSection
                 <Link
                   key={chapter.id}
                   href={`/books/${bookId}/chapters/${chapter.id}`}
-                  className="block p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  className="block p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
                 >
                   <div className="text-xs text-muted-foreground mb-1">
                     第 {chapter.sortOrder ?? '—'} 章
                   </div>
-                  <div className="text-sm font-medium line-clamp-2">
+                  <div className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
                     {chapter.title}
                   </div>
                 </Link>

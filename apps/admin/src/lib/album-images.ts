@@ -6,9 +6,43 @@ const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp'];
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.mkv', '.avi'];
 
 /**
- * 获取图册的视频列表
+ * 递归获取目录下的所有视频文件
+ * @param dirPath 目录路径
+ * @param basePath 基础路径（用于生成相对路径）
+ * @returns 视频文件相对路径数组
+ */
+function getVideosRecursively(dirPath: string, basePath: string): string[] {
+    const videos: string[] = [];
+
+    try {
+        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+
+        for (const entry of entries) {
+            const fullPath = path.join(dirPath, entry.name);
+
+            if (entry.isDirectory()) {
+                // 递归搜索子目录
+                videos.push(...getVideosRecursively(fullPath, basePath));
+            } else if (entry.isFile()) {
+                const ext = path.extname(entry.name).toLowerCase();
+                if (VIDEO_EXTENSIONS.includes(ext)) {
+                    // 生成相对于图册根目录的路径
+                    const relativePath = path.relative(basePath, fullPath);
+                    videos.push(relativePath);
+                }
+            }
+        }
+    } catch (error) {
+        console.error(`Failed to read directory ${dirPath}:`, error);
+    }
+
+    return videos;
+}
+
+/**
+ * 获取图册的视频列表（递归搜索所有子文件夹）
  * @param albumId 图册ID
- * @returns 视频文件名数组（已排序）
+ * @returns 视频文件路径数组（相对路径，已排序）
  */
 export function getAlbumVideos(albumId: number): string[] {
     try {
@@ -20,18 +54,13 @@ export function getAlbumVideos(albumId: number): string[] {
             return [];
         }
 
-        // 读取文件夹内容
-        const files = fs.readdirSync(albumPath);
+        // 递归获取所有视频文件
+        const videoFiles = getVideosRecursively(albumPath, albumPath);
 
-        // 过滤视频文件并排序
-        const videoFiles = files
-            .filter((file) => {
-                const ext = path.extname(file).toLowerCase();
-                return VIDEO_EXTENSIONS.includes(ext);
-            })
-            .sort((a, b) => {
-                return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-            });
+        // 排序
+        videoFiles.sort((a, b) => {
+            return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+        });
 
         return videoFiles;
     } catch (error) {
@@ -122,4 +151,11 @@ export function albumFolderExists(albumId: number): boolean {
  */
 export function getAlbumImageCount(albumId: number): number {
     return getAlbumImages(albumId).length;
+}
+
+/**
+ * 获取视频总数
+ */
+export function getAlbumVideoCount(albumId: number): number {
+    return getAlbumVideos(albumId).length;
 }

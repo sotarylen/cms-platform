@@ -9,6 +9,8 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
             scriptCount: number;
             albumCount: number;
             studioCount: number;
+            chapterListCount: number;
+            summaryCount: number;
         }>
     >(
         `
@@ -17,7 +19,9 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
       (SELECT COUNT(*) FROM n8n_book_chapters_content) AS chapterContentCount,
       (SELECT COUNT(*) FROM n8n_book_tran2script) AS scriptCount,
       (SELECT COUNT(*) FROM n8n_albums) AS albumCount,
-      (SELECT COUNT(*) FROM n8n_album_studios) AS studioCount
+      (SELECT COUNT(*) FROM n8n_album_studios) AS studioCount,
+      (SELECT COUNT(*) FROM n8n_book_chapters_list) AS chapterListCount,
+      (SELECT COUNT(*) FROM n8n_book_summary) AS summaryCount
     `,
     );
 
@@ -27,5 +31,7 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
         scripts: Number(row?.scriptCount ?? 0),
         albums: Number(row?.albumCount ?? 0),
         studios: Number(row?.studioCount ?? 0),
+        chapters: Number(row?.chapterListCount ?? 0),
+        summaries: Number(row?.summaryCount ?? 0),
     };
 };

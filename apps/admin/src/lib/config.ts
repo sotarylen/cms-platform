@@ -8,6 +8,7 @@ const CONFIG_PATH = path.join(process.cwd(), 'config', 'settings.json');
 const DEFAULT_SETTINGS: Settings = {
     webhooks: [],
     albumStoragePath: '/Users/sotary/albums',
+    albumImportPath: '/Users/sotary/albums-import',
 };
 
 /**
@@ -107,5 +108,22 @@ export function getAlbumStoragePath(): string {
 export function setAlbumStoragePath(path: string): void {
     const settings = getSettings();
     settings.albumStoragePath = path;
+    saveSettings(settings);
+}
+
+/**
+ * 获取图册导入路径
+ */
+export function getAlbumImportPath(): string {
+    const settings = getSettings();
+    return settings.albumImportPath || '/Users/sotary/albums-import';
+}
+
+/**
+ * 设置图册导入路径
+ */
+export function setAlbumImportPath(path: string): void {
+    const settings = getSettings();
+    settings.albumImportPath = path;
     saveSettings(settings);
 }

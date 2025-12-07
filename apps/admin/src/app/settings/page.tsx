@@ -58,6 +58,29 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
 
+                {/* Album Counts Management */}
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <Database className="h-5 w-5 text-teal-600" />
+                            <CardTitle>图册计数管理</CardTitle>
+                        </div>
+                        <CardDescription>
+                            批量更新图册的图片和视频数量缓存
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            初始化或刷新所有图册的计数数据。
+                        </p>
+                        <Button asChild variant="outline">
+                            <Link href="/settings/album-counts">
+                                管理计数 <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+
                 {/* Webhook Configuration */}
                 <Card>
                     <CardHeader>

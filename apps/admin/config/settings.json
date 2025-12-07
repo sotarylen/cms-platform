@@ -29,5 +29,6 @@
       "description": "book18.org 来源的小说章节抓取接口"
     }
   ],
-  "albumStoragePath": "/Users/sotary/dev/n8n/file/album"
+  "albumStoragePath": "/Users/sotary/dev/n8n/file/album",
+  "albumImportPath": "/Users/sotary/Pictures/albums"
 }

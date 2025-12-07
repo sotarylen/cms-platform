@@ -93,7 +93,7 @@ export default async function AdminPage() {
                                         <span className="text-sm font-semibold text-muted-foreground">#{book.id}</span>
                                     </td>
                                     <td className="p-4 align-middle">
-                                        <Link href={`/books/${book.id}`} className="font-medium hover:underline">
+                                        <Link href={`/books/${book.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
                                             {book.name}
                                         </Link>
                                     </td>
@@ -133,7 +133,7 @@ export default async function AdminPage() {
                     {latestAlbums.filter(album => album.id && album.id !== 0).slice(0, 6).map((album) => (
                         <ContentCard
                             key={album.id}
-                            title={album.resource_title_raw}
+                            title={album.title || album.resource_title_raw}
                             image={album.source_page_url || null}
                             href={`/albums/${album.id}`}
                             subtitle={

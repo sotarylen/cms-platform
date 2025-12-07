@@ -95,7 +95,7 @@ export function StudioCreateDialog() {
 
     return (
         <>
-            <Button onClick={() => setOpen(true)} size="icon" variant="outline">
+            <Button onClick={() => setOpen(true)} size="icon" className="h-8 w-8">
                 <Plus className="h-4 w-4" />
             </Button>
             <EditDialog

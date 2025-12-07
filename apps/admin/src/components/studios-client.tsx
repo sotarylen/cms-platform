@@ -150,7 +150,7 @@ export function StudiosClient({ studios, page, pageSize, view, search }: Studios
                                             <td className="p-4 align-middle">
                                                 <Link
                                                     href={`/albums/studios/${studio.studio_id}`}
-                                                    className="font-medium hover:underline"
+                                                    className="font-medium text-foreground hover:text-primary transition-colors"
                                                 >
                                                     {studio.studio_name}
                                                 </Link>

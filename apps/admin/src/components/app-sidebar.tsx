@@ -62,13 +62,19 @@ export function AppSidebar({ className, user }: SidebarProps) {
                 label: "图册管理",
                 icon: ImageIcon,
                 href: "/albums",
-                active: pathname.startsWith("/albums") && !pathname.startsWith("/albums/studios"),
+                active: pathname.startsWith("/albums") && !pathname.startsWith("/albums/studios") && !pathname.startsWith("/albums/models"),
             },
             {
                 label: "摄影机构",
                 icon: Building2,
                 href: "/albums/studios",
                 active: pathname.startsWith("/albums/studios"),
+            },
+            {
+                label: "模特",
+                icon: Users,
+                href: "/albums/models",
+                active: pathname.startsWith("/albums/models"),
             },
             {
                 label: "系统设置",

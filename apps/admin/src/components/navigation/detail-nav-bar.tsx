@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -17,8 +18,8 @@ export interface DetailNavBarProps {
      * 左侧返回按钮配置
      */
     backButton: {
-        /** 返回链接 */
-        href: string;
+        /** 返回链接，null 表示使用浏览器后退 */
+        href: string | null;
         /** 按钮文本 */
         label: string;
         /** 图标元素 */
@@ -47,20 +48,34 @@ export interface DetailNavBarProps {
 }
 
 export function DetailNavBar({ backButton, navigation, className }: DetailNavBarProps) {
+    const router = useRouter();
+
     return (
         <Card className={cn("sticky top-0 z-50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60", className)}>
             <CardContent className="flex items-center justify-between p-4 gap-4">
                 {/* 左侧返回按钮 */}
-                <Link href={backButton.href}>
+                {backButton.href ? (
+                    <Link href={backButton.href}>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-2 hover:bg-muted"
+                        >
+                            {backButton.icon}
+                            <span className="hidden sm:inline">{backButton.label}</span>
+                        </Button>
+                    </Link>
+                ) : (
                     <Button
                         variant="ghost"
                         size="sm"
                         className="gap-2 hover:bg-muted"
+                        onClick={() => router.back()}
                     >
                         {backButton.icon}
                         <span className="hidden sm:inline">{backButton.label}</span>
                     </Button>
-                </Link>
+                )}
 
                 <Separator orientation="vertical" className="h-6 hidden md:block" />
 

@@ -30,8 +30,9 @@ export async function GET(
             return new NextResponse('File not found', { status: 404 });
         }
 
-        // 读取文件
-        const fileBuffer = fs.readFileSync(filePath);
+        // 获取文件信息
+        const stat = fs.statSync(filePath);
+        const fileSize = stat.size;
 
         // 确定 Content-Type
         const ext = path.extname(filename).toLowerCase();
@@ -60,17 +61,66 @@ export async function GET(
             case '.webm':
                 contentType = 'video/webm';
                 break;
+            case '.mov':
+                contentType = 'video/quicktime';
+                break;
+            case '.avi':
+                contentType = 'video/x-msvideo';
+                break;
+            case '.mkv':
+                contentType = 'video/x-matroska';
+                break;
         }
 
-        // 返回文件内容
+        // 检查是否为视频文件
+        const isVideo = contentType.startsWith('video/');
+
+        // 处理 Range 请求（用于视频流式传输和跳转）
+        const range = request.headers.get('range');
+
+        if (range && isVideo) {
+            // 解析 Range 头
+            const parts = range.replace(/bytes=/, '').split('-');
+            const start = parseInt(parts[0], 10);
+            const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+            const chunkSize = end - start + 1;
+
+            // 读取指定范围的文件内容
+            const fileStream = fs.createReadStream(filePath, { start, end });
+            const chunks: Buffer[] = [];
+
+            for await (const chunk of fileStream) {
+                chunks.push(chunk);
+            }
+
+            const buffer = Buffer.concat(chunks);
+
+            // 返回部分内容（206 Partial Content）
+            return new NextResponse(buffer, {
+                status: 206,
+                headers: {
+                    'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+                    'Accept-Ranges': 'bytes',
+                    'Content-Length': chunkSize.toString(),
+                    'Content-Type': contentType,
+                    'Cache-Control': 'public, max-age=31536000, immutable',
+                },
+            });
+        }
+
+        // 对于非 Range 请求或非视频文件，返回完整文件
+        const fileBuffer = fs.readFileSync(filePath);
+
         return new NextResponse(fileBuffer, {
             headers: {
                 'Content-Type': contentType,
+                'Content-Length': fileSize.toString(),
+                'Accept-Ranges': isVideo ? 'bytes' : 'none',
                 'Cache-Control': 'public, max-age=31536000, immutable',
             },
         });
     } catch (error) {
-        console.error('Error serving image:', error);
+        console.error('Error serving file:', error);
         return new NextResponse('Internal Server Error', { status: 500 });
     }
 }

@@ -60,7 +60,7 @@ export default async function AlbumDetailPage({ params, searchParams }: PageProp
             {/* 导航栏 */}
             <DetailNavBar
                 backButton={{
-                    href: "/albums",
+                    href: null, // 使用浏览器后退
                     label: "返回列表",
                     icon: <ArrowLeft className="h-4 w-4" />
                 }}
@@ -101,15 +101,21 @@ export default async function AlbumDetailPage({ params, searchParams }: PageProp
                                     <Badge variant="outline" className="flex items-center gap-1">
                                         <span className="h-3 w-3">#</span> {albumId}
                                     </Badge>
-                                    {album.model_name && (
+                                    {album.model_name && album.model_id && album.model_id > 0 ? (
+                                        <Link href={`/albums/models/${album.model_id}`}>
+                                            <Badge variant="secondary" className="flex items-center gap-1 cursor-pointer hover:bg-accent transition-colors">
+                                                <User className="h-3 w-3" /> {album.model_name}
+                                            </Badge>
+                                        </Link>
+                                    ) : album.model_name ? (
                                         <Badge variant="secondary" className="flex items-center gap-1">
                                             <User className="h-3 w-3" /> {album.model_name}
                                         </Badge>
-                                    )}
+                                    ) : null}
                                     {album.studio_name && album.studio_id && album.studio_id > 0 ? (
                                         <Link href={`/albums/studios/${album.studio_id}`}>
                                             <Badge variant="outline" className="flex items-center gap-1 cursor-pointer hover:bg-accent transition-colors">
-                                                <Building2 className="h-3 w-3" /> {album.studio_name}
+                                                <Building2 className="h-3 w-4" /> {album.studio_name}
                                             </Badge>
                                         </Link>
                                     ) : album.studio_name ? (

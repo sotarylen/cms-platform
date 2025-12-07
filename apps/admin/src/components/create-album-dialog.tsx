@@ -133,7 +133,7 @@ export function CreateAlbumDialog({ models, studios }: CreateAlbumDialogProps) {
 
     return (
         <>
-            <Button onClick={() => setOpen(true)} size="icon">
+            <Button onClick={() => setOpen(true)} size="icon" className="h-8 w-8">
                 <Plus className="h-4 w-4" />
             </Button>
             <EditDialog

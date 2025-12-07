@@ -56,8 +56,8 @@ const renderBooksTable = (data: BookListResponse) => {
               </td>
               <td className="p-4 align-middle">
                 <Link
-                  href={`/books/${book.id}` as any}
-                  className="font-medium hover:underline"
+                  href={`/books/${book.id}`}
+                  className="font-medium text-foreground hover:text-primary transition-colors"
                 >
                   {book.name}
                 </Link>

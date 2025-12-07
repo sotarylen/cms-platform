@@ -11,7 +11,9 @@ import {
     Play,
     Pause,
     Settings,
-    Image as ImageIcon
+    Image as ImageIcon,
+    Trash2,
+    RotateCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -29,9 +31,12 @@ type Props = {
     initialIndex: number;
     onClose: () => void;
     onSetCover?: (index: number) => void;
+    onDelete?: (index: number) => void;
+    albumId?: number;
+    imageFilenames?: string[];
 };
 
-export function ImageLightbox({ images, initialIndex, onClose, onSetCover }: Props) {
+export function ImageLightbox({ images, initialIndex, onClose, onSetCover, onDelete, albumId, imageFilenames }: Props) {
     const [transitionMode, setTransitionMode] = useState<'fade' | 'slide' | 'combined' | 'none'>('combined');
     const [autoPlayInterval, setAutoPlayInterval] = useState(3000);
     const [showSettings, setShowSettings] = useState(false);
@@ -45,6 +50,7 @@ export function ImageLightbox({ images, initialIndex, onClose, onSetCover }: Pro
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const [rotation, setRotation] = useState<Record<number, number>>({});
 
     // 确保索引有效
     useEffect(() => {
@@ -57,6 +63,7 @@ export function ImageLightbox({ images, initialIndex, onClose, onSetCover }: Pro
     useEffect(() => {
         setScale(1);
         setPosition({ x: 0, y: 0 });
+        // Rotation persists across image changes
     }, [currentIndex]);
 
     // 动画清理
@@ -185,9 +192,66 @@ export function ImageLightbox({ images, initialIndex, onClose, onSetCover }: Pro
         });
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = useCallback(() => {
         setIsDragging(false);
-    };
+    }, []);
+
+    const handleRotate = useCallback(async () => {
+        const currentRotation = rotation[currentIndex] || 0;
+        const newRotation = (currentRotation + 90) % 360;
+
+        // Update local state
+        setRotation(prev => ({
+            ...prev,
+            [currentIndex]: newRotation
+        }));
+
+        // Save to server
+        if (albumId && imageFilenames) {
+            try {
+                const filename = imageFilenames[currentIndex];
+                console.log('[Rotate] Saving rotation:', { albumId, filename, rotation: newRotation });
+
+                const response = await fetch('/api/images/rotate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        albumId,
+                        filename,
+                        rotation: newRotation
+                    }),
+                });
+
+                const result = await response.json();
+                console.log('[Rotate] Server response:', result);
+
+                if (!response.ok) {
+                    console.error('[Rotate] Failed to save rotation:', result);
+                } else {
+                    console.log('[Rotate] Rotation saved successfully');
+
+                    // Force reload the image by adding a cache-busting parameter
+                    const currentUrl = images[currentIndex];
+                    const separator = currentUrl.includes('?') ? '&' : '?';
+                    const newUrl = `${currentUrl}${separator}t=${Date.now()}`;
+
+                    // Update the images array to force re-render
+                    const newImages = [...images];
+                    newImages[currentIndex] = newUrl;
+
+                    // We need to trigger a re-render by updating the key
+                    // This will be handled by the parent component
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('[Rotate] Error saving rotation:', error);
+            }
+        } else {
+            console.warn('[Rotate] Missing albumId or imageFilenames, rotation not saved');
+        }
+    }, [currentIndex, rotation, albumId, imageFilenames, images]);
 
     // 点击背景关闭，点击内容不关闭
     const handleBackdropClick = (e: React.MouseEvent) => {
@@ -300,7 +364,7 @@ export function ImageLightbox({ images, initialIndex, onClose, onSetCover }: Pro
                         src={images[currentIndex]}
                         alt={`Image ${currentIndex + 1}`}
                         style={{
-                            transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+                            transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation[currentIndex] || 0}deg)`,
                             cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
                             transition: isDragging ? 'none' : 'transform 0.2s ease-out',
                             maxHeight: '100vh',
@@ -356,6 +420,20 @@ export function ImageLightbox({ images, initialIndex, onClose, onSetCover }: Pro
                         </Button>
                     </div>
 
+                    <div className="w-px h-6 bg-white/20 mx-2" />
+
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-white hover:bg-white/20"
+                            onClick={handleRotate}
+                            title="旋转 90°"
+                        >
+                            <RotateCw className="h-5 w-5" />
+                        </Button>
+                    </div>
+
                     {onSetCover && (
                         <>
                             <div className="w-px h-6 bg-white/20 mx-2" />
@@ -368,6 +446,23 @@ export function ImageLightbox({ images, initialIndex, onClose, onSetCover }: Pro
                                     title="设为封面"
                                 >
                                     <ImageIcon className="h-5 w-5" />
+                                </Button>
+                            </div>
+                        </>
+                    )}
+
+                    {onDelete && (
+                        <>
+                            <div className="w-px h-6 bg-white/20 mx-2" />
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-white hover:bg-white/20 hover:text-red-400"
+                                    onClick={() => onDelete(currentIndex)}
+                                    title="删除图片"
+                                >
+                                    <Trash2 className="h-5 w-5" />
                                 </Button>
                             </div>
                         </>
