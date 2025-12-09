@@ -3,13 +3,13 @@ import path from 'path';
 import { getAlbumStoragePath } from './config';
 
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp'];
-const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.mkv', '.avi'];
+const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.mkv', '.avi', '.flv', '.wmv', '.ogg', '.3gp', '.m4v', '.ts'];
 
 /**
  * 递归获取目录下的所有视频文件
  * @param dirPath 目录路径
  * @param basePath 基础路径（用于生成相对路径）
- * @returns 视频文件相对路径数组
+ * @returns 视频文件名数组（仅文件名）
  */
 function getVideosRecursively(dirPath: string, basePath: string): string[] {
     const videos: string[] = [];
@@ -21,14 +21,14 @@ function getVideosRecursively(dirPath: string, basePath: string): string[] {
             const fullPath = path.join(dirPath, entry.name);
 
             if (entry.isDirectory()) {
-                // 递归搜索子目录
-                videos.push(...getVideosRecursively(fullPath, basePath));
+                // 递归搜索子目录，但返回的文件名不包含子目录路径
+                const subVideos = getVideosRecursively(fullPath, basePath);
+                videos.push(...subVideos);
             } else if (entry.isFile()) {
                 const ext = path.extname(entry.name).toLowerCase();
                 if (VIDEO_EXTENSIONS.includes(ext)) {
-                    // 生成相对于图册根目录的路径
-                    const relativePath = path.relative(basePath, fullPath);
-                    videos.push(relativePath);
+                    // 只返回文件名，不包含子目录路径
+                    videos.push(entry.name);
                 }
             }
         }
@@ -42,7 +42,7 @@ function getVideosRecursively(dirPath: string, basePath: string): string[] {
 /**
  * 获取图册的视频列表（递归搜索所有子文件夹）
  * @param albumId 图册ID
- * @returns 视频文件路径数组（相对路径，已排序）
+ * @returns 视频文件名数组（仅文件名，已排序）
  */
 export function getAlbumVideos(albumId: number): string[] {
     try {
@@ -54,7 +54,7 @@ export function getAlbumVideos(albumId: number): string[] {
             return [];
         }
 
-        // 递归获取所有视频文件
+        // 递归获取所有视频文件，只返回文件名
         const videoFiles = getVideosRecursively(albumPath, albumPath);
 
         // 排序
@@ -106,7 +106,7 @@ function getImagesRecursive(dir: string, basePath: string): string[] {
 /**
  * 获取图册的图片列表（递归读取所有子文件夹）
  * @param albumId 图册ID
- * @returns 图片文件相对路径数组（已排序）
+ * @returns 图片文件名数组（仅文件名，已排序）
  */
 export function getAlbumImages(albumId: number): string[] {
     try {
@@ -118,7 +118,7 @@ export function getAlbumImages(albumId: number): string[] {
             return [];
         }
 
-        // 递归获取所有图片
+        // 递归获取所有图片，只返回文件名
         const imageFiles = getImagesRecursive(albumPath, albumPath);
 
         // 排序

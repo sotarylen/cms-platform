@@ -43,6 +43,10 @@ export function ImportPathSettings({ initialPath }: Props) {
                 />
                 <p className="text-sm text-muted-foreground pt-2">
                     文件夹格式：[工作室][模特]图册名称
+                    <br />
+                    <span className="text-xs text-blue-600 dark:text-blue-400">
+                        导入时将使用完整的文件夹名称作为图册标题
+                    </span>
                 </p>
             </div>
 

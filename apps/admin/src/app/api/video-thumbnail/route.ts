@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const ffmpeg = spawn('ffmpeg', [
         '-i', filePath,
         '-ss', '00:00:00',
-        '-vframes', '1',
+        '-vframes', '5',
         '-f', 'image2',
         '-'
     ]);

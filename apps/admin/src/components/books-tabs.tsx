@@ -8,6 +8,9 @@ import { formatDate, formatNumber } from '@/lib/utils';
 import { Pagination } from '@/components/pagination';
 import { ContentCard } from '@/components/data-display/content-card';
 import { StandardContainer } from '@/components/standard-container';
+import TxtUploadDialog from '@/components/upload/txt-upload-dialog';
+import { Button } from '@/components/ui/button';
+import { Upload } from 'lucide-react';
 
 type BookItem = {
   id: number;
@@ -39,6 +42,7 @@ export default function BooksTabs({
   const [searchValue, setSearchValue] = useState(initialQuery);
 
   const [loading, setLoading] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [items, setItems] = useState<BookItem[]>([]);
   const [total, setTotal] = useState(0);
   const [pageSize, setPageSize] = useState(30);
@@ -95,42 +99,59 @@ export default function BooksTabs({
     fetchList({ tab, query, source, page: 1, pageSize: newPageSize });
   };
 
+  const handleUploadSuccess = (bookId: number) => {
+    // 刷新列表以显示新导入的书籍
+    fetchList({ tab, query, source, page, pageSize });
+    setUploadDialogOpen(false);
+  };
+
   return (
-    <StandardContainer
-      // title="书籍列表"
-      actionLeft={
-        <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
-          <button
-            role="tab"
-            aria-selected={tab === 'in-stock'}
-            className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${tab === 'in-stock' ? 'bg-background text-foreground shadow-sm' : ''
-              }`}
-            onClick={() => onSwitch('in-stock')}
-          >
-            在库书籍
-          </button>
-          <button
-            role="tab"
-            aria-selected={tab === 'pending'}
-            className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${tab === 'pending' ? 'bg-background text-foreground shadow-sm' : ''
-              }`}
-            onClick={() => onSwitch('pending')}
-          >
-            待获取数据
-          </button>
-        </div>
-      }
-      search={{
-        value: searchValue,
-        onChange: setSearchValue,
-        onSearch: handleSearch,
-        placeholder: "书名 / 作者"
-      }}
-      viewToggle={{
-        view: viewMode,
-        onViewChange: setViewMode
-      }}
-    >
+    <>
+      <StandardContainer
+        // title="书籍列表"
+        actionLeft={
+          <div className="flex items-center gap-2">
+            <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
+              <button
+                role="tab"
+                aria-selected={tab === 'in-stock'}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${tab === 'in-stock' ? 'bg-background text-foreground shadow-sm' : ''
+                  }`}
+                onClick={() => onSwitch('in-stock')}
+              >
+                在库书籍
+              </button>
+              <button
+                role="tab"
+                aria-selected={tab === 'pending'}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${tab === 'pending' ? 'bg-background text-foreground shadow-sm' : ''
+                  }`}
+                onClick={() => onSwitch('pending')}
+              >
+                待获取数据
+              </button>
+            </div>
+            <Button
+              onClick={() => setUploadDialogOpen(true)}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              导入TXT
+            </Button>
+          </div>
+        }
+        search={{
+          value: searchValue,
+          onChange: setSearchValue,
+          onSearch: handleSearch,
+          placeholder: "书名 / 作者"
+        }}
+        viewToggle={{
+          view: viewMode,
+          onViewChange: setViewMode
+        }}
+      >
       <div className="space-y-4">
         {/* Content */}
         <div className="min-h-[200px]">
@@ -213,5 +234,13 @@ export default function BooksTabs({
         />
       </div>
     </StandardContainer>
+
+    {/* TXT上传对话框 */}
+    <TxtUploadDialog
+      open={uploadDialogOpen}
+      onOpenChange={setUploadDialogOpen}
+      onSuccess={handleUploadSuccess}
+    />
+    </>
   );
 }

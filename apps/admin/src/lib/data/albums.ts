@@ -78,12 +78,16 @@ export const getAlbumById = async (albumId: number): Promise<Album | null> => {
     const row = rows[0];
     if (!row) return null;
 
-    // Auto-set cover to first image if not set
+    // Prioritize local images, but preserve manually set covers
     let coverUrl = row.source_page_url;
-    if (!coverUrl || coverUrl.trim() === '') {
+    const isLocalImage = coverUrl && coverUrl.startsWith('/api/images/albums/');
+
+    if (!isLocalImage) {
         const images = getAlbumImages(albumId);
         if (images.length > 0) {
             coverUrl = `/api/images/albums/${albumId}/${images[0]}`;
+        } else if (!coverUrl || coverUrl.trim() === '') {
+            coverUrl = null;
         }
     }
 
@@ -178,14 +182,26 @@ export async function getAlbums({
     const rows = await query<any[]>(selectSql, [...queryParams, pageSize, offset]);
 
     const items: Album[] = await Promise.all(rows.map(async (row) => {
-        // Auto-set cover to first image if not set
+        // Prioritize local images, but preserve manually set covers
         let coverUrl = row.source_page_url;
-        if (!coverUrl || coverUrl.trim() === '') {
+
+        // Only auto-set if:
+        // 1. No cover URL at all (null or empty)
+        // 2. Cover URL is an external URL (http/https) - not a manually set local image
+        const isExternalUrl = coverUrl && (coverUrl.startsWith('http://') || coverUrl.startsWith('https://'));
+        const isLocalImage = coverUrl && coverUrl.startsWith('/api/images/albums/');
+
+        if (!isLocalImage) {
+            // No manually set cover, try to use local images
             const images = getAlbumImages(row.album_id);
             if (images.length > 0) {
                 coverUrl = `/api/images/albums/${row.album_id}/${images[0]}`;
+            } else if (!coverUrl || coverUrl.trim() === '') {
+                coverUrl = null;
             }
+            // If isExternalUrl is true and no local images, keep the external URL
         }
+        // If isLocalImage is true, preserve the manually set cover
 
         return {
             id: row.album_id,
@@ -236,12 +252,16 @@ export const getLatestAlbums = async (limit: number = 12): Promise<Album[]> => {
     );
 
     return rows.map((row) => {
-        // Auto-set cover to first image if not set
+        // Prioritize local images, but preserve manually set covers
         let coverUrl = row.source_page_url;
-        if (!coverUrl || coverUrl.trim() === '') {
+        const isLocalImage = coverUrl && coverUrl.startsWith('/api/images/albums/');
+
+        if (!isLocalImage) {
             const images = getAlbumImages(row.album_id);
             if (images.length > 0) {
                 coverUrl = `/api/images/albums/${row.album_id}/${images[0]}`;
+            } else if (!coverUrl || coverUrl.trim() === '') {
+                coverUrl = null;
             }
         }
 

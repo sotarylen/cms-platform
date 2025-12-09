@@ -15,17 +15,21 @@ export interface ParsedFolderName {
 
 /**
  * 解析文件夹名称
- * 格式：[工作室][模特]图册名称
+ * 格式：[工作室][模特] 或 [工作室][模特]图册名称
  * 示例：[MetArt][Emma]Summer Dreams
  * 示例：[X-Art][]Sunset Collection (模特为空)
- * 
+ * 示例：[MetArt][Emma] (仅工作室和模特，使用完整名称作为标题)
+ *
  * @param folderName 文件夹名称
  * @returns 解析结果
  */
 export function parseFolderName(folderName: string): ParsedFolderName {
-    // 匹配前两个中括号
-    const regex = /^\[([^\]]*)\]\[([^\]]*)\](.+)$/;
+    // 匹配格式：[工作室][模特] 或 [工作室][模特]图册名称
+    const regex = /^\[([^\]]*)\]\[([^\]]*)\](.*)$/;
     const match = folderName.match(regex);
+
+    // 调试输出
+    // console.log('解析文件夹名称:', folderName, '匹配结果:', match);
 
     if (!match) {
         return {
@@ -33,7 +37,7 @@ export function parseFolderName(folderName: string): ParsedFolderName {
             model: '',
             title: '',
             valid: false,
-            error: '文件夹名称格式错误，应为：[工作室][模特]图册名称'
+            error: '文件夹名称格式错误，应为：[工作室][模特]或[工作室][模特]图册名称'
         };
     }
 
@@ -41,7 +45,7 @@ export function parseFolderName(folderName: string): ParsedFolderName {
     const model = match[2].trim();
     const title = match[3].trim();
 
-    // 工作室和标题必须存在
+    // 工作室必须存在
     if (!studio) {
         return {
             studio,
@@ -52,20 +56,15 @@ export function parseFolderName(folderName: string): ParsedFolderName {
         };
     }
 
-    if (!title) {
-        return {
-            studio,
-            model,
-            title,
-            valid: false,
-            error: '图册标题不能为空'
-        };
-    }
+    // 如果没有标题部分，使用完整文件夹名称作为标题
+    const finalTitle = title || folderName;
+
+    // console.log('解析结果:', { studio, model, title: finalTitle });
 
     return {
         studio,
         model: model || '', // 模特可以为空
-        title,
+        title: finalTitle,
         valid: true
     };
 }
@@ -104,7 +103,7 @@ export function validateFolderContent(folderPath: string): boolean {
 
     try {
         const files = fs.readdirSync(folderPath);
-        const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov', '.avi', '.mkv'];
+        const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.ogg', '.3gp', '.m4v', '.ts'];
 
         return files.some(file => {
             const ext = path.extname(file).toLowerCase();

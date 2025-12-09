@@ -54,8 +54,21 @@ async function moveFolderToStorage(sourcePath: string, albumId: number): Promise
             fs.rmSync(targetPath, { recursive: true, force: true });
         }
 
+        // 确保目标目录存在
+        const targetDir = path.dirname(targetPath);
+        if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
+        }
+
         // 移动文件夹
         fs.renameSync(sourcePath, targetPath);
+        
+        // 验证移动是否成功
+        if (!fs.existsSync(targetPath)) {
+            console.error('Folder move verification failed');
+            return false;
+        }
+        
         return true;
     } catch (error) {
         console.error('Error moving folder:', error);
@@ -65,7 +78,8 @@ async function moveFolderToStorage(sourcePath: string, albumId: number): Promise
 
 /**
  * 处理单个文件夹的导入
- * @param folderName 文件夹名称
+ * 使用完整文件夹名称作为图册标题，同时解析工作室和模特信息
+ * @param folderName 文件夹名称（完整名称作为标题）
  * @returns 导入结果
  */
 async function importSingleFolder(folderName: string): Promise<ImportResult> {
@@ -88,12 +102,12 @@ async function importSingleFolder(folderName: string): Promise<ImportResult> {
         // 查找或创建模特（可能为null）
         const modelId = await findOrCreateModel(parsed.model);
 
-        // 创建图册记录
+        // 创建图册记录，使用完整文件夹名称作为标题
         const albumId = await createAlbum({
-            title: parsed.title,
-            model: modelId,
+            title: folderName, // 使用完整文件夹名称作为图册标题
+            model: modelId || undefined,
             studio_id: studioId,
-            source_page_url: null,
+            source_page_url: undefined,
             resource_url: `local://imported-${Date.now()}-${Math.random().toString(36).substring(7)}`
         });
 
@@ -109,7 +123,7 @@ async function importSingleFolder(folderName: string): Promise<ImportResult> {
                 albumId,
                 studio: parsed.studio,
                 model: parsed.model,
-                title: parsed.title
+                title: folderName
             };
         }
 
@@ -119,7 +133,7 @@ async function importSingleFolder(folderName: string): Promise<ImportResult> {
             albumId,
             studio: parsed.studio,
             model: parsed.model,
-            title: parsed.title
+            title: folderName
         };
     } catch (error) {
         console.error('Error importing folder:', error);
