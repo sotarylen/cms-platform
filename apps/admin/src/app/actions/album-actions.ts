@@ -24,10 +24,10 @@ export async function updateAlbumAction(
         if (typeof data.model === 'string' && data.model.trim() !== '') {
             // Check if model exists to avoid duplicates
             const models = await getModels();
-            const existingModel = models.find(m => m.name.toLowerCase() === (data.model as string).toLowerCase());
+            const existingModel = models.find(m => m.model_name.toLowerCase() === (data.model as string).toLowerCase());
 
             if (existingModel) {
-                modelId = existingModel.id;
+                modelId = existingModel.model_id;
             } else {
                 modelId = await createModel(data.model);
             }
@@ -61,10 +61,10 @@ export async function createAlbumAction(data: {
         if (data.model && data.model.trim() !== '') {
             // Check if model exists
             const models = await getModels();
-            const existingModel = models.find(m => m.name.toLowerCase() === data.model!.toLowerCase());
+            const existingModel = models.find(m => m.model_name.toLowerCase() === data.model!.toLowerCase());
 
             if (existingModel) {
-                modelId = existingModel.id;
+                modelId = existingModel.model_id;
             } else {
                 modelId = await createModel(data.model);
             }

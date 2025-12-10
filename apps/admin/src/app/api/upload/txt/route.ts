@@ -2,12 +2,14 @@ import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
+import jschardet from 'jschardet';
+import iconv from 'iconv-lite';
 
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
-    
+
     if (!file) {
       return NextResponse.json({ error: '没有找到上传的文件' }, { status: 400 });
     }
@@ -23,7 +25,7 @@ export async function POST(req: Request) {
     }
 
     // 创建上传目录
-    const uploadDir = path.join(process.cwd(), 'uploads', 'txt');
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'books');
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true });
     }
@@ -38,16 +40,40 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(bytes);
     await writeFile(filepath, buffer);
 
-    // 读取文件内容用于后续解析
-    const content = buffer.toString('utf-8');
+    // 检测文件编码
+    let content = '';
+    const detected = jschardet.detect(buffer);
+
+    // 如果检测到的编码是 GBK 或 GB2312 等中文编码，使用 iconv-lite 解码
+    // 否则默认尝试 UTF-8
+    let encoding = detected.encoding;
+    if (encoding === 'GB2312' || encoding === 'GBK' || encoding === 'GB18030' || encoding === 'windows-1252') {
+      // windows-1252 经常是误判的 GBK
+      // 如果检测信心较低，且不是 UTF-8，优先尝试 GBK (针对中文环境)
+      if (encoding === 'windows-1252' || !encoding) {
+        encoding = 'GB18030';
+      }
+    }
+
+    try {
+      if (encoding && iconv.encodingExists(encoding) && encoding !== 'UTF-8' && encoding !== 'ascii') {
+        content = iconv.decode(buffer, encoding);
+      } else {
+        content = buffer.toString('utf-8');
+      }
+    } catch (e) {
+      console.warn('解码失败，尝试使用 UTF-8 fallback', e);
+      content = buffer.toString('utf-8');
+    }
 
     return NextResponse.json({
       success: true,
       filename,
       filepath,
       size: file.size,
-      content: content.substring(0, 1000), // 返回前1000个字符用于预览
-      contentLength: content.length
+      content: content.substring(0, 500), // 返回前500个字符用于预览
+      contentLength: content.length,
+      detectedEncoding: encoding
     });
 
   } catch (error: any) {

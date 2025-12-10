@@ -334,3 +334,53 @@ export const getLatestBooks = async (limit: number = 5): Promise<BookListItem[]>
 
     return mapBookRows(rows);
 };
+
+export const createBook = async (data: {
+    title: string;
+    author: string;
+    category?: string;
+    desc?: string;
+    cover?: string;
+    source?: string;
+}): Promise<number> => {
+    const result = await query<any>(
+        `INSERT INTO n8n_book_list 
+        (book_name, book_author, book_catagory, book_introduce, book_cover_url, book_source, book_process_status, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+            data.title,
+            data.author,
+            data.category || '未分类',
+            data.desc || '',
+            data.cover || null,
+            data.source || '本地导入',
+            1 // 1: 已处理/正常状态
+        ]
+    );
+    return result.insertId;
+};
+
+export const createChapter = async (data: {
+    bookId: number;
+    title: string;
+    content: string;
+    sortOrder: number;
+    fileSize?: number;
+}): Promise<number> => {
+    // 简单的字数统计作为文件大小
+    const size = data.fileSize || Buffer.byteLength(data.content, 'utf8');
+
+    const result = await query<any>(
+        `INSERT INTO n8n_book_chapters_content 
+        (book_id, chapter_title, chapter_content, chapter_sort, chapter_file_size, created_at) 
+        VALUES (?, ?, ?, ?, ?, NOW())`,
+        [
+            data.bookId,
+            data.title,
+            data.content,
+            data.sortOrder,
+            size
+        ]
+    );
+    return result.insertId;
+};

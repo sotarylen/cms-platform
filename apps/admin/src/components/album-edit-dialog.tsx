@@ -69,8 +69,8 @@ export function AlbumEditDialog({ album, models, studios }: AlbumEditDialogProps
             // Find model ID by name, or use the name to create new one
             let modelValue: number | string | undefined;
             if (formData.modelName.trim()) {
-                const matchedModel = models.find(m => m.name.toLowerCase() === formData.modelName.toLowerCase());
-                modelValue = matchedModel ? matchedModel.id : formData.modelName;
+                const matchedModel = models.find(m => m.model_name.toLowerCase() === formData.modelName.toLowerCase());
+                modelValue = matchedModel ? matchedModel.model_id : formData.modelName;
             }
 
             // Find studio ID by name
@@ -211,7 +211,7 @@ export function AlbumEditDialog({ album, models, studios }: AlbumEditDialogProps
                                 />
                                 <datalist id="model-suggestions">
                                     {models.map(m => (
-                                        <option key={m.id} value={m.name} />
+                                        <option key={m.model_id} value={m.model_name} />
                                     ))}
                                 </datalist>
                                 <p className="text-xs text-muted-foreground">

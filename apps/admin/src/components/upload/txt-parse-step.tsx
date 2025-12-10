@@ -8,12 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Settings, 
-  Play, 
-  FileText, 
-  Loader2, 
-  CheckCircle, 
+import {
+  Settings,
+  Play,
+  FileText,
+  Loader2,
+  CheckCircle,
   AlertCircle,
   Eye,
   Edit3
@@ -35,7 +35,13 @@ const TxtParseStep: React.FC<TxtParseStepProps> = ({
   onLoadingChange
 }) => {
   const [parseSettings, setParseSettings] = useState({
-    chapterPattern: '第[0-9一二三四五六七八九十]+章',
+    // 更宽容的默认正则：支持 "第x章"、"Chapter x"、纯数字章节等常见的格式
+    // 解释：
+    // (第)? 可能有"第"
+    // [0-9一二三四五六七八九十百千]+ 数字（阿拉伯或中文）
+    // (章|节|Chapter|Episode)? 后缀
+    // 或者直接 Chapter 开头
+    chapterPattern: '(^\\s*第?[0-9一二三四五六七八九十百千]+[章节].*|^\\s*Chapter\\s*[0-9]+.*)',
     autoGenerateSummary: true,
     bookTitle: '',
     author: ''
@@ -143,7 +149,7 @@ const TxtParseStep: React.FC<TxtParseStepProps> = ({
             章节预览
           </Button>
         </div>
-        
+
         {parseResult && (
           <div className="text-sm text-gray-500">
             共 {parseResult.totalChapters} 个章节
@@ -181,7 +187,7 @@ const TxtParseStep: React.FC<TxtParseStepProps> = ({
               <Settings className="w-4 h-4" />
               解析设置
             </h3>
-            
+
             <div className="space-y-4">
               <div>
                 <Label htmlFor="chapterPattern">章节识别模式</Label>
@@ -250,7 +256,7 @@ const TxtParseStep: React.FC<TxtParseStepProps> = ({
                 开始解析
               </Button>
             )}
-            
+
             {parseStatus === 'parsing' && (
               <div className="text-center space-y-4">
                 <Loader2 className="w-8 h-8 text-blue-500 mx-auto animate-spin" />
@@ -263,7 +269,7 @@ const TxtParseStep: React.FC<TxtParseStepProps> = ({
                 </div>
               </div>
             )}
-            
+
             {parseStatus === 'success' && parseResult && (
               <div className="text-center space-y-4">
                 <CheckCircle className="w-8 h-8 text-green-500 mx-auto" />
@@ -272,8 +278,8 @@ const TxtParseStep: React.FC<TxtParseStepProps> = ({
                   <p className="text-sm text-gray-500">
                     识别到 {parseResult.totalChapters} 个章节
                   </p>
-                  <Button 
-                    className="mt-4" 
+                  <Button
+                    className="mt-4"
                     onClick={() => setPreviewMode('preview')}
                   >
                     <Eye className="w-4 h-4 mr-2" />
@@ -282,15 +288,15 @@ const TxtParseStep: React.FC<TxtParseStepProps> = ({
                 </div>
               </div>
             )}
-            
+
             {parseStatus === 'error' && (
               <div className="text-center space-y-4">
                 <AlertCircle className="w-8 h-8 text-red-500 mx-auto" />
                 <div>
                   <p className="font-medium text-red-700">解析失败</p>
                   <p className="text-sm text-red-600">{error}</p>
-                  <Button 
-                    className="mt-4" 
+                  <Button
+                    className="mt-4"
                     variant="outline"
                     onClick={() => {
                       setParseStatus('idle');

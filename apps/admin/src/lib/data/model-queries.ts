@@ -1,5 +1,5 @@
 import { query } from '@/lib/db';
-import { getAlbumImages, getAlbumVideos } from '@/lib/album-images';
+import { getAlbumImages, getAlbumVideos, getBestAlbumCover } from '@/lib/album-images';
 import type { AlbumModel, Album } from '@/lib/types';
 
 /**
@@ -37,17 +37,56 @@ export const getModelById = async (modelId: number): Promise<AlbumModel | null> 
  */
 export const getAlbumsByModel = async (
     modelId: number,
-    options: { page?: number; pageSize?: number } = {}
+    options: {
+        page?: number;
+        pageSize?: number;
+        sort?: 'newest' | 'oldest' | 'updated' | 'title' | 'id_asc' | 'id_desc';
+        query?: string;
+    } = {}
 ): Promise<{ items: Album[]; total: number }> => {
-    const { page = 1, pageSize = 30 } = options;
+    const { page = 1, pageSize = 30, sort = 'newest', query: searchQuery = '' } = options;
     const offset = (page - 1) * pageSize;
+
+    // Build WHERE clause
+    const whereConditions: string[] = ['a.model = ?'];
+    const queryParams: any[] = [modelId];
+
+    if (searchQuery && searchQuery.trim()) {
+        whereConditions.push(`(
+            a.resource_title_raw LIKE ? OR 
+            a.resource_title_cleaned LIKE ? OR
+            s.studio_name LIKE ?
+        )`);
+        const searchPattern = `%${searchQuery.trim()}%`;
+        queryParams.push(searchPattern, searchPattern, searchPattern);
+    }
+
+    const whereClause = `WHERE ${whereConditions.join(' AND ')}`;
 
     // Get total count
     const countRows = await query<any[]>(
-        'SELECT COUNT(*) as total FROM n8n_albums WHERE model = ?',
-        [modelId]
+        `SELECT COUNT(*) as total 
+         FROM n8n_albums a
+         LEFT JOIN n8n_album_studios s ON a.studio_id = s.studio_id
+         ${whereClause}`,
+        queryParams
     );
     const total = Number(countRows[0]?.total ?? 0);
+
+    let orderBy = 'a.updated_at DESC';
+    if (sort === 'newest') {
+        orderBy = 'a.created_at DESC';
+    } else if (sort === 'oldest') {
+        orderBy = 'a.created_at ASC';
+    } else if (sort === 'updated') {
+        orderBy = 'a.updated_at DESC';
+    } else if (sort === 'title') {
+        orderBy = 'a.resource_title_cleaned ASC';
+    } else if (sort === 'id_asc') {
+        orderBy = 'a.album_id ASC';
+    } else if (sort === 'id_desc') {
+        orderBy = 'a.album_id DESC';
+    }
 
     // Get albums
     const rows = await query<any[]>(
@@ -58,10 +97,10 @@ export const getAlbumsByModel = async (
         FROM n8n_albums a
         LEFT JOIN n8n_album_studios s ON a.studio_id = s.studio_id
         LEFT JOIN n8n_album_models m ON a.model = m.model_id
-        WHERE a.model = ?
-        ORDER BY a.updated_at DESC
+        ${whereClause}
+        ORDER BY ${orderBy}
         LIMIT ? OFFSET ?`,
-        [modelId, pageSize, offset]
+        [...queryParams, pageSize, offset]
     );
 
     const items = rows.map((row) => {
@@ -69,9 +108,9 @@ export const getAlbumsByModel = async (
         let coverUrl = row.source_page_url;
 
         if (!coverUrl || coverUrl.trim() === '') {
-            const images = getAlbumImages(row.album_id);
-            if (images.length > 0) {
-                coverUrl = `/api/images/albums/${row.album_id}/${images[0]}`;
+            const bestImage = getBestAlbumCover(row.album_id);
+            if (bestImage) {
+                coverUrl = `/api/images/albums/${row.album_id}/${bestImage}`;
             }
         }
 

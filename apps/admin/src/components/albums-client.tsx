@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlbumCover } from '@/components/album-cover';
 import { Button } from '@/components/ui/button';
-import { Image as ImageIcon, Users, Building2, ArrowDownWideNarrow, ArrowUpNarrowWide, Clock } from "lucide-react"
+import { Image as ImageIcon, Users, Building2, ArrowDownWideNarrow, ArrowUpNarrowWide, Clock, AlignLeft, Hash } from "lucide-react"
 import { CreateAlbumDialog } from '@/components/create-album-dialog';
 import { ImportAlbumsButton } from '@/components/import-albums-button';
 import type { Album, AlbumStats, AlbumModel, AlbumStudio } from '@/lib/types';
@@ -25,7 +25,7 @@ interface AlbumsClientProps {
         pageSize: number;
     };
     searchQuery: string;
-    sort: 'newest' | 'oldest' | 'updated';
+    sort: 'newest' | 'oldest' | 'updated' | 'title' | 'id_asc' | 'id_desc';
     viewMode: 'grid' | 'list';
     models: AlbumModel[];
     studios: AlbumStudio[];
@@ -150,6 +150,28 @@ export function AlbumsClient({ stats, albumsData, searchQuery, sort, viewMode, m
                         >
                             <Link href={buildUrl({ sort: 'updated', page: 1 }) as any}>
                                 <Clock className="h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <Button
+                            variant={sort === 'title' ? 'default' : 'outline'}
+                            size="icon"
+                            className="h-8 w-8 rounded-none border-l-0"
+                            title="按标题"
+                            asChild
+                        >
+                            <Link href={buildUrl({ sort: 'title', page: 1 }) as any}>
+                                <AlignLeft className="h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <Button
+                            variant={sort === 'id_desc' || sort === 'id_asc' ? 'default' : 'outline'}
+                            size="icon"
+                            className="h-8 w-8 rounded-l-none border-l-0"
+                            title="按ID"
+                            asChild
+                        >
+                            <Link href={buildUrl({ sort: sort === 'id_desc' ? 'id_asc' : 'id_desc', page: 1 }) as any}>
+                                <Hash className="h-4 w-4" />
                             </Link>
                         </Button>
                     </div>

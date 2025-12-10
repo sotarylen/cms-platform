@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Edit, Upload, Image as ImageIcon } from 'lucide-react';
+import { Edit, Upload, Image as ImageIcon, Loader2, Trash2 } from 'lucide-react';
 import { EditDialog } from '@/components/forms/edit-dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { updateModelAction } from '@/app/actions/models';
+import { updateModelAction, deleteModelAction } from '@/app/actions/models';
 import type { AlbumModel } from '@/lib/types';
 
 type Props = {
@@ -19,6 +20,7 @@ type Props = {
 export function ModelEditDialog({ model, onSuccess }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         model_name: model.model_name,
@@ -28,6 +30,7 @@ export function ModelEditDialog({ model, onSuccess }: Props) {
     });
     const [coverFile, setCoverFile] = useState<File | null>(null);
     const [coverPreview, setCoverPreview] = useState<string | null>(model.model_cover_url || null);
+    const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,6 +108,31 @@ export function ModelEditDialog({ model, onSuccess }: Props) {
         }
     };
 
+    const handleDelete = async () => {
+        const confirmed = window.confirm(
+            `确认删除模特 "${model.model_name}"？\n\n此操作将删除模特信息，并解绑关联的图册（不会删除图册），无法撤销。`
+        );
+
+        if (!confirmed) return;
+
+        setIsDeleting(true);
+        try {
+            const result = await deleteModelAction(model.model_id);
+            if (result.success) {
+                toast.success('模特已删除');
+                setIsOpen(false);
+                router.push('/albums/models');
+                router.refresh();
+            } else {
+                toast.error(result.error || '删除失败');
+            }
+        } catch (error) {
+            toast.error('删除失败');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     return (
         <>
             <Button
@@ -131,11 +159,30 @@ export function ModelEditDialog({ model, onSuccess }: Props) {
                     setCoverPreview(model.model_cover_url || null);
                 }}
                 title="编辑模特"
-                description="修改模特信息"
                 onSubmit={handleSubmit}
                 loading={loading}
                 error={error}
                 maxWidth="sm:max-w-[800px]"
+                leftActions={
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={handleDelete}
+                        disabled={loading || isDeleting}
+                    >
+                        {isDeleting ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                删除中...
+                            </>
+                        ) : (
+                            <>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                删除模特
+                            </>
+                        )}
+                    </Button>
+                }
             >
                 <div className="grid grid-cols-[240px_1fr] gap-6 py-4">
                     {/* Left Column: Cover Preview */}

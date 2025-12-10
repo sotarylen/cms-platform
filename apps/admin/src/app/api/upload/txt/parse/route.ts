@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import path from 'path';
+import jschardet from 'jschardet';
+import iconv from 'iconv-lite';
 
 interface ParseOptions {
   chapterPattern: string;
@@ -26,13 +28,35 @@ interface ParseResult {
 export async function POST(req: Request) {
   try {
     const { filename, options } = await req.json();
-    
+
     if (!filename) {
       return NextResponse.json({ error: '缺少文件名参数' }, { status: 400 });
     }
 
-    const filepath = path.join(process.cwd(), 'uploads', 'txt', filename);
-    const content = await readFile(filepath, 'utf-8');
+    const filepath = path.join(process.cwd(), 'public', 'uploads', 'books', filename);
+    const buffer = await readFile(filepath);
+
+    // 检测文件编码
+    let content = '';
+    const detected = jschardet.detect(buffer);
+
+    let encoding = detected.encoding;
+    if (encoding === 'GB2312' || encoding === 'GBK' || encoding === 'GB18030' || encoding === 'windows-1252') {
+      if (encoding === 'windows-1252' || !encoding) {
+        encoding = 'GB18030';
+      }
+    }
+
+    try {
+      if (encoding && iconv.encodingExists(encoding) && encoding !== 'UTF-8' && encoding !== 'ascii') {
+        content = iconv.decode(buffer, encoding);
+      } else {
+        content = buffer.toString('utf-8');
+      }
+    } catch (e) {
+      console.warn('解码失败，尝试使用 UTF-8 fallback', e);
+      content = buffer.toString('utf-8');
+    }
 
     const parseOptions: ParseOptions = {
       chapterPattern: options?.chapterPattern || '第[0-9一二三四五六七八九十]+章',
@@ -60,11 +84,11 @@ export async function POST(req: Request) {
 function parseTxtContent(content: string, options: ParseOptions): ParseResult {
   const lines = content.split(/\r?\n/);
   const chapters: Chapter[] = [];
-  
+
   // 智能提取书名和作者
   let bookTitle = options.bookTitle || '';
   let author = options.author || '';
-  
+
   if (!bookTitle && lines.length > 0) {
     // 尝试从第一行提取书名
     const firstLine = lines[0].trim();
@@ -89,14 +113,14 @@ function parseTxtContent(content: string, options: ParseOptions): ParseResult {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    
+
     // 检查是否是章节标题
     if (chapterPattern.test(line)) {
       // 保存上一章节
       if (currentChapter) {
         chapters.push(currentChapter);
       }
-      
+
       // 开始新章节
       chapterCounter++;
       currentChapter = {

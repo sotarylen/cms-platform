@@ -159,3 +159,29 @@ export function getAlbumImageCount(albumId: number): number {
 export function getAlbumVideoCount(albumId: number): number {
     return getAlbumVideos(albumId).length;
 }
+
+/**
+ * 获取最佳封面图片文件名
+ * 优先级：
+ * 1. 文件名为 "cover" (不区分大小写)
+ * 2. 第一张图片
+ */
+export function getBestAlbumCover(albumId: number): string | null {
+    const images = getAlbumImages(albumId);
+    if (images.length === 0) {
+        return null;
+    }
+
+    // 查找名为 cover 的图片 (不区分大小写)
+    const coverImage = images.find(img => {
+        const name = path.basename(img, path.extname(img)).toLowerCase();
+        return name === 'cover';
+    });
+
+    if (coverImage) {
+        return coverImage;
+    }
+
+    // 默认返回第一张
+    return images[0];
+}

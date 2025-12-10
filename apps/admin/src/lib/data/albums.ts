@@ -5,7 +5,7 @@ import type {
     AlbumStats,
     AlbumModel,
 } from '@/lib/types';
-import { getAlbumImageCount, getAlbumVideoCount, getAlbumImages } from '@/lib/album-images';
+import { getAlbumImageCount, getAlbumVideoCount, getAlbumImages, getBestAlbumCover } from '@/lib/album-images';
 
 export const getAlbumStats = async (): Promise<AlbumStats> => {
     const [row] = await query<
@@ -83,9 +83,9 @@ export const getAlbumById = async (albumId: number): Promise<Album | null> => {
     const isLocalImage = coverUrl && coverUrl.startsWith('/api/images/albums/');
 
     if (!isLocalImage) {
-        const images = getAlbumImages(albumId);
-        if (images.length > 0) {
-            coverUrl = `/api/images/albums/${albumId}/${images[0]}`;
+        const bestImage = getBestAlbumCover(albumId);
+        if (bestImage) {
+            coverUrl = `/api/images/albums/${albumId}/${bestImage}`;
         } else if (!coverUrl || coverUrl.trim() === '') {
             coverUrl = null;
         }
@@ -115,7 +115,7 @@ interface GetAlbumsOptions {
     page?: number;
     pageSize?: number;
     query?: string;
-    sort?: 'newest' | 'oldest' | 'updated';
+    sort?: 'newest' | 'oldest' | 'updated' | 'title' | 'id_asc' | 'id_desc';
 }
 
 export async function getAlbums({
@@ -164,6 +164,12 @@ export async function getAlbums({
         orderBy = 'a.created_at ASC';
     } else if (sort === 'updated') {
         orderBy = 'a.updated_at DESC';
+    } else if (sort === 'title') {
+        orderBy = 'a.resource_title_cleaned ASC';
+    } else if (sort === 'id_asc') {
+        orderBy = 'a.album_id ASC';
+    } else if (sort === 'id_desc') {
+        orderBy = 'a.album_id DESC';
     }
 
     // Select with search filter
@@ -193,9 +199,9 @@ export async function getAlbums({
 
         if (!isLocalImage) {
             // No manually set cover, try to use local images
-            const images = getAlbumImages(row.album_id);
-            if (images.length > 0) {
-                coverUrl = `/api/images/albums/${row.album_id}/${images[0]}`;
+            const bestImage = getBestAlbumCover(row.album_id);
+            if (bestImage) {
+                coverUrl = `/api/images/albums/${row.album_id}/${bestImage}`;
             } else if (!coverUrl || coverUrl.trim() === '') {
                 coverUrl = null;
             }
@@ -257,9 +263,9 @@ export const getLatestAlbums = async (limit: number = 12): Promise<Album[]> => {
         const isLocalImage = coverUrl && coverUrl.startsWith('/api/images/albums/');
 
         if (!isLocalImage) {
-            const images = getAlbumImages(row.album_id);
-            if (images.length > 0) {
-                coverUrl = `/api/images/albums/${row.album_id}/${images[0]}`;
+            const bestImage = getBestAlbumCover(row.album_id);
+            if (bestImage) {
+                coverUrl = `/api/images/albums/${row.album_id}/${bestImage}`;
             } else if (!coverUrl || coverUrl.trim() === '') {
                 coverUrl = null;
             }
@@ -338,17 +344,49 @@ export const getStudioById = async (studioId: number): Promise<AlbumStudio | nul
 
 export const getAlbumsByStudio = async (
     studioId: number,
-    options: { page?: number; pageSize?: number } = {}
+    options: { page?: number; pageSize?: number; sort?: 'newest' | 'oldest' | 'updated' | 'title' | 'id_asc' | 'id_desc'; query?: string } = {}
 ): Promise<{ items: Album[]; total: number }> => {
-    const { page = 1, pageSize = 30 } = options;
+    const { page = 1, pageSize = 30, sort = 'newest', query: searchQuery = '' } = options;
     const offset = (page - 1) * pageSize;
+
+    // Build WHERE clause
+    const whereConditions: string[] = ['a.studio_id = ?'];
+    const queryParams: any[] = [studioId];
+
+    if (searchQuery && searchQuery.trim()) {
+        whereConditions.push(`(
+            a.resource_title_raw LIKE ? OR 
+            a.resource_title_cleaned LIKE ? OR
+            m.model_name LIKE ?
+        )`);
+        const searchPattern = `%${searchQuery.trim()}%`;
+        queryParams.push(searchPattern, searchPattern, searchPattern);
+    }
+
+    const whereClause = `WHERE ${whereConditions.join(' AND ')}`;
 
     // Get total count
     const countRows = await query<any[]>(
-        'SELECT COUNT(*) as total FROM n8n_albums WHERE studio_id = ?',
-        [studioId]
+        `SELECT COUNT(*) as total 
+         FROM n8n_albums a
+         LEFT JOIN n8n_album_models m ON a.model = m.model_id
+         ${whereClause}`,
+        queryParams
     );
     const total = countRows[0]?.total || 0;
+
+    let orderBy = 'a.created_at DESC';
+    if (sort === 'oldest') {
+        orderBy = 'a.created_at ASC';
+    } else if (sort === 'updated') {
+        orderBy = 'a.updated_at DESC';
+    } else if (sort === 'title') {
+        orderBy = 'a.resource_title_cleaned ASC';
+    } else if (sort === 'id_asc') {
+        orderBy = 'a.album_id ASC';
+    } else if (sort === 'id_desc') {
+        orderBy = 'a.album_id DESC';
+    }
 
     // Get paginated items
     const rows = await query<any[]>(
@@ -360,21 +398,24 @@ export const getAlbumsByStudio = async (
     FROM n8n_albums a
     LEFT JOIN n8n_album_studios s ON a.studio_id = s.studio_id
     LEFT JOIN n8n_album_models m ON a.model = m.model_id
-    WHERE a.studio_id = ?
-    ORDER BY a.updated_at DESC
+    WHERE ${whereConditions.join(' AND ')}
+    ORDER BY ${orderBy}
     LIMIT ? OFFSET ?
     `,
-        [studioId, pageSize, offset]
+        [...queryParams, pageSize, offset]
     );
 
     const items = rows.map((row) => {
-        // Auto-set cover to first image if not set
+        // Prioritize local images, but preserve manually set covers
         let coverUrl = row.source_page_url;
+        const isLocalImage = coverUrl && coverUrl.startsWith('/api/images/albums/');
 
-        if (!coverUrl || coverUrl.trim() === '') {
-            const images = getAlbumImages(row.album_id);
-            if (images.length > 0) {
-                coverUrl = `/api/images/albums/${row.album_id}/${images[0]}`;
+        if (!isLocalImage) {
+            const bestImage = getBestAlbumCover(row.album_id);
+            if (bestImage) {
+                coverUrl = `/api/images/albums/${row.album_id}/${bestImage}`;
+            } else if (!coverUrl || coverUrl.trim() === '') {
+                coverUrl = null;
             }
         }
 

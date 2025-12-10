@@ -92,3 +92,28 @@ export async function createModelAction(data: {
         return { success: false, error: '创建失败' };
     }
 }
+
+/**
+ * 删除模特
+ */
+export async function deleteModelAction(modelId: number) {
+    try {
+        // First unlink any albums associated with this model
+        await query(
+            'UPDATE n8n_albums SET model = NULL WHERE model = ?',
+            [modelId]
+        );
+
+        // Then delete the model
+        await query(
+            'DELETE FROM n8n_album_models WHERE model_id = ?',
+            [modelId]
+        );
+
+        revalidatePath('/albums/models');
+        return { success: true };
+    } catch (error) {
+        console.error('Delete model error:', error);
+        return { success: false, error: '删除失败' };
+    }
+}

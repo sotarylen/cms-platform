@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FolderInput, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { FolderInput, Loader2, CheckCircle2, XCircle, AlertCircle, Brain, Zap } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -12,16 +12,22 @@ import {
 } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { importAlbumsAction, type ImportSummary, type ImportResult } from '@/app/actions/import-albums';
+import { importAlbumsAction, getImportFoldersAction, importSelectedAlbumsAction, type ImportSummary, type ImportResult } from '@/app/actions/import-albums';
+import { SmartImportPreview, type ParsedFolderItem } from '@/components/smart-import-preview';
 import { useRouter } from 'next/navigation';
+
+
 
 export function ImportAlbumsButton() {
     const [isImporting, setIsImporting] = useState(false);
     const [showDialog, setShowDialog] = useState(false);
     const [importResult, setImportResult] = useState<ImportSummary | null>(null);
+    const [showSmartPreview, setShowSmartPreview] = useState(false);
+    const [folders, setFolders] = useState<string[]>([]);
+    const [parsedResults, setParsedResults] = useState<any[]>([]);
     const router = useRouter();
 
-    const handleImport = async () => {
+    const handleTraditionalImport = async () => {
         setIsImporting(true);
         setShowDialog(true);
         setImportResult(null);
@@ -54,6 +60,77 @@ export function ImportAlbumsButton() {
         }
     };
 
+    const handleSmartImport = async () => {
+        try {
+            const response = await fetch('/api/smart-import/folders');
+            const result = await response.json();
+
+            if (!result.success) {
+                toast.error(result.error || '获取文件夹列表失败');
+                return;
+            }
+
+            if (result.total === 0) {
+                toast.info('导入目录中没有待处理的文件夹');
+                return;
+            }
+
+            // 转换数据格式以匹配组件期望
+            const folderNames = result.data.map((item: any) => item.folderName);
+            const parsedData = result.data.map((item: any) => ({
+                studio: item.studio,
+                model: item.model,
+                title: item.title,
+                folderName: item.folderName, // 添加文件夹名称
+                confidence: item.confidence,
+                method: item.method,
+                valid: item.valid,
+                error: item.error
+            }));
+
+            setFolders(folderNames);
+            setParsedResults(parsedData);
+            setShowSmartPreview(true);
+        } catch (error) {
+            console.error('Smart import error:', error);
+            toast.error('启动智能导入失败');
+        }
+    };
+
+    const handleSmartConfirm = async (results: ParsedFolderItem[]) => {
+        setShowSmartPreview(false);
+        setIsImporting(true);
+
+        try {
+            // 构建智能导入数据
+            const smartItems = results.map(result => ({
+                folderName: result.folderName,
+                studio: result.studio,
+                model: result.model,
+                title: result.title
+            }));
+
+            // 调用实际的导入API
+            const summary = await importSelectedAlbumsAction(smartItems);
+
+            setImportResult(summary);
+            setShowDialog(true);
+            toast.success(`成功导入 ${results.length} 个图册`);
+            router.refresh();
+
+        } catch (error) {
+            console.error('Smart import error:', error);
+            toast.error('智能导入过程中发生错误');
+        } finally {
+            setIsImporting(false);
+        }
+    };
+
+    const handleSmartCancel = () => {
+        setShowSmartPreview(false);
+        setFolders([]);
+    };
+
     const getStatusIcon = (status: ImportResult['status']) => {
         switch (status) {
             case 'success':
@@ -67,20 +144,45 @@ export function ImportAlbumsButton() {
 
     return (
         <>
-            <Button
-                onClick={handleImport}
-                size="icon"
-                className="h-8 w-8"
-                disabled={isImporting}
-                title="从导入目录批量导入图册"
-            >
-                {isImporting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                    <FolderInput className="h-4 w-4" />
-                )}
-            </Button>
+            {/* 导入按钮组 */}
+            <div className="flex gap-2">
+                <Button
+                    onClick={handleSmartImport}
+                    size="icon"
+                    className="h-8 w-8"
+                    disabled={isImporting}
+                    title="智能导入图册（使用完整文件夹名称作为标题）"
+                >
+                    {isImporting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <Brain className="h-4 w-4" />
+                    )}
+                </Button>
 
+                <Button
+                    onClick={handleTraditionalImport}
+                    size="icon"
+                    variant="outline"
+                    className="h-8 w-8"
+                    disabled={isImporting}
+                    title="传统导入图册"
+                >
+                    <FolderInput className="h-4 w-4" />
+                </Button>
+            </div>
+
+            {/* 智能导入预览 */}
+            {showSmartPreview && (
+                <SmartImportPreview
+                    folders={folders}
+                    parsedResults={parsedResults}
+                    onConfirm={handleSmartConfirm}
+                    onCancel={handleSmartCancel}
+                />
+            )}
+
+            {/* 传统导入结果 */}
             <Dialog open={showDialog} onOpenChange={setShowDialog}>
                 <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>

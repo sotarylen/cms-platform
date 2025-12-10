@@ -131,14 +131,6 @@ export default function BooksTabs({
                 待获取数据
               </button>
             </div>
-            <Button
-              onClick={() => setUploadDialogOpen(true)}
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
-              导入TXT
-            </Button>
           </div>
         }
         search={{
@@ -151,96 +143,106 @@ export default function BooksTabs({
           view: viewMode,
           onViewChange: setViewMode
         }}
+        actionsRight={
+          <Button
+            onClick={() => setUploadDialogOpen(true)}
+            size="icon"
+            variant="outline"
+            title="导入TXT"
+          >
+            <Upload className="w-4 h-4" />
+          </Button>
+        }
       >
-      <div className="space-y-4">
-        {/* Content */}
-        <div className="min-h-[200px]">
-          {loading && <p className="text-center text-muted-foreground py-8">加载中…</p>}
-          {!loading && items.length === 0 && <p className="text-center text-muted-foreground py-8">没有符合条件的书籍。</p>}
+        <div className="space-y-4">
+          {/* Content */}
+          <div className="min-h-[200px]">
+            {loading && <p className="text-center text-muted-foreground py-8">加载中…</p>}
+            {!loading && items.length === 0 && <p className="text-center text-muted-foreground py-8">没有符合条件的书籍。</p>}
 
-          {!loading && items.length > 0 && (
-            viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                {items.map((book) => (
-                  <ContentCard
-                    key={book.id}
-                    title={book.name}
-                    image={book.cover}
-                    href={`/books/${book.id}`}
-                    subtitle={
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{book.author || '未知作者'}</span>
+            {!loading && items.length > 0 && (
+              viewMode === 'grid' ? (
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                  {items.map((book) => (
+                    <ContentCard
+                      key={book.id}
+                      title={book.name}
+                      image={book.cover}
+                      href={`/books/${book.id}`}
+                      subtitle={
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{book.author || '未知作者'}</span>
+                          </div>
                         </div>
-                      </div>
-                    }
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-md border">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">ID</th>
-                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">书名</th>
-                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">作者</th>
-                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">来源</th>
-                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">章节数</th>
-                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">状态</th>
-                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">操作</th>
-                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">入库时间</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((book) => (
-                      <tr key={book.id} className="border-b transition-colors hover:bg-muted/50">
-                        <td className="p-4 align-middle">
-                          <span className="text-sm font-semibold text-muted-foreground">#{book.id}</span>
-                        </td>
-                        <td className="p-4 align-middle">
-                          <Link href={`/books/${book.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
-                            {book.name}
-                          </Link>
-                        </td>
-                        <td className="p-4 align-middle text-sm">{book.author ?? '未知'}</td>
-                        <td className="p-4 align-middle text-sm">{book.source ?? '—'}</td>
-                        <td className="p-4 align-middle text-sm">{formatNumber(book.chapterCount)}</td>
-                        <td className="p-4 align-middle">
-                          <StatusPill status={book.status} />
-                        </td>
-                        <td className="p-4 align-middle">
-                          {book.status === 0 ? <TriggerButton bookId={book.id} /> : null}
-                        </td>
-                        <td className="p-4 align-middle text-sm text-muted-foreground">
-                          {formatDate(new Date(book.createdAt))}
-                        </td>
+                      }
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">ID</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">书名</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">作者</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">来源</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">章节数</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">状态</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">操作</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">入库时间</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
-          )}
+                    </thead>
+                    <tbody>
+                      {items.map((book) => (
+                        <tr key={book.id} className="border-b transition-colors hover:bg-muted/50">
+                          <td className="p-4 align-middle">
+                            <span className="text-sm font-semibold text-muted-foreground">#{book.id}</span>
+                          </td>
+                          <td className="p-4 align-middle">
+                            <Link href={`/books/${book.id}`} className="font-medium text-foreground hover:text-primary transition-colors">
+                              {book.name}
+                            </Link>
+                          </td>
+                          <td className="p-4 align-middle text-sm">{book.author ?? '未知'}</td>
+                          <td className="p-4 align-middle text-sm">{book.source ?? '—'}</td>
+                          <td className="p-4 align-middle text-sm">{formatNumber(book.chapterCount)}</td>
+                          <td className="p-4 align-middle">
+                            <StatusPill status={book.status} />
+                          </td>
+                          <td className="p-4 align-middle">
+                            {book.status === 0 ? <TriggerButton bookId={book.id} /> : null}
+                          </td>
+                          <td className="p-4 align-middle text-sm text-muted-foreground">
+                            {formatDate(new Date(book.createdAt))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            )}
+          </div>
+
+          {/* Pagination */}
+          <Pagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
         </div>
+      </StandardContainer>
 
-        {/* Pagination */}
-        <Pagination
-          total={total}
-          page={page}
-          pageSize={pageSize}
-          onPageChange={handlePageChange}
-          onPageSizeChange={handlePageSizeChange}
-        />
-      </div>
-    </StandardContainer>
-
-    {/* TXT上传对话框 */}
-    <TxtUploadDialog
-      open={uploadDialogOpen}
-      onOpenChange={setUploadDialogOpen}
-      onSuccess={handleUploadSuccess}
-    />
+      {/* TXT上传对话框 */}
+      <TxtUploadDialog
+        open={uploadDialogOpen}
+        onOpenChange={setUploadDialogOpen}
+        onSuccess={handleUploadSuccess}
+      />
     </>
   );
 }

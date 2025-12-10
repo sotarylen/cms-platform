@@ -12,16 +12,33 @@ type Props = {
     images: string[];
     storagePath: string;
     total: number;
-    page: number;
-    pageSize: number;
 };
 
-export function AlbumImagesGallery({ albumId, images, storagePath, total, page, pageSize }: Props) {
+export function AlbumImagesGallery({ albumId, images, storagePath, total }: Props) {
     const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [columns, setColumns] = useState(2);
+    const [displayCount, setDisplayCount] = useState(50); // Start with 50 images
     const router = useRouter();
-    const searchParams = useSearchParams();
+
+    // Infinite Scroll Observer
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && displayCount < total) {
+                    setDisplayCount((prev) => Math.min(prev + 50, total));
+                }
+            },
+            { threshold: 0.1, rootMargin: '200px' }
+        );
+
+        const sentinel = document.getElementById('scroll-sentinel');
+        if (sentinel) {
+            observer.observe(sentinel);
+        }
+
+        return () => observer.disconnect();
+    }, [displayCount, total]);
 
     // Responsive column calculation
     useEffect(() => {
@@ -68,28 +85,16 @@ export function AlbumImagesGallery({ albumId, images, storagePath, total, page, 
         }
     };
 
-    const handlePageChange = (newPage: number) => {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('page', newPage.toString());
-        router.push(`?${params.toString()}`);
-    };
-
-    const handlePageSizeChange = (newPageSize: number) => {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('pageSize', newPageSize.toString());
-        params.set('page', '1'); // Reset to first page when page size changes
-        router.push(`?${params.toString()}`);
-    };
-
     if (images.length === 0) {
         return <div className="text-center py-10 text-muted-foreground">暂无图片</div>;
     }
 
-    // Distribute images into columns for masonry layout
+    // Distribute visible images into columns for masonry layout
+    const visibleImages = images.slice(0, displayCount);
     const columnImages: string[][] = Array.from({ length: columns }, () => []);
     const imageIndices: number[][] = Array.from({ length: columns }, () => []); // Track original indices
 
-    images.forEach((image, index) => {
+    visibleImages.forEach((image, index) => {
         const colIndex = index % columns;
         columnImages[colIndex].push(image);
         imageIndices[colIndex].push(index);
@@ -126,18 +131,14 @@ export function AlbumImagesGallery({ albumId, images, storagePath, total, page, 
                 ))}
             </div>
 
-            {total > 0 && (
-                <Pagination
-                    total={total}
-                    page={page}
-                    pageSize={pageSize}
-                    onPageChange={handlePageChange}
-                    onPageSizeChange={handlePageSizeChange}
-                    pageSizeOptions={[20, 50, 100]}
-                    showTotal={true}
-                    showJumpTo={true}
-                />
-            )}
+            {/* Load More Sentinel */}
+            <div id="scroll-sentinel" className="h-10 w-full flex items-center justify-center p-4">
+                {displayCount < total && (
+                    <div className="text-muted-foreground text-sm animate-pulse">
+                        加载更多图片... ({displayCount} / {total})
+                    </div>
+                )}
+            </div>
 
             {lightboxOpen && (
                 <ImageLightbox

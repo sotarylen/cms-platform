@@ -43,9 +43,6 @@ export default async function AlbumDetailPage({ params, searchParams }: PageProp
     // 获取图片列表
     const allImages = getAlbumImages(albumId);
     const totalImages = allImages.length;
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const images = allImages.slice(start, end);
     const storagePath = getAlbumStoragePath();
 
     // 获取视频列表
@@ -167,11 +164,9 @@ export default async function AlbumDetailPage({ params, searchParams }: PageProp
                 <CardContent className="p-6">
                     <AlbumImagesGallery
                         albumId={albumId}
-                        images={images}
+                        images={allImages}
                         storagePath={storagePath}
                         total={totalImages}
-                        page={page}
-                        pageSize={pageSize}
                     />
                 </CardContent>
             </Card>

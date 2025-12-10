@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { writeFile, unlink } from 'fs/promises';
 import path from 'path';
+import { createBook, createChapter } from '@/lib/data/books';
 
 interface ImportData {
   filename: string;
@@ -19,20 +20,19 @@ interface ImportData {
 export async function POST(req: Request) {
   try {
     const importData: ImportData = await req.json();
-    
+
     if (!importData.filename || !importData.bookTitle || !importData.chapters?.length) {
-      return NextResponse.json({ 
-        error: '缺少必要的导入数据' 
+      return NextResponse.json({
+        error: '缺少必要的导入数据'
       }, { status: 400 });
     }
 
-    // 模拟数据库插入操作
-    // 在实际项目中，这里应该连接到真实的数据库
+    // 数据库插入操作
     const result = await saveBookToDatabase(importData);
 
     // 清理上传的临时文件
     try {
-      const filepath = path.join(process.cwd(), 'uploads', 'txt', importData.filename);
+      const filepath = path.join(process.cwd(), 'public', 'uploads', 'books', importData.filename);
       await unlink(filepath);
     } catch (cleanupError) {
       console.warn('清理临时文件失败:', cleanupError);
@@ -54,26 +54,36 @@ export async function POST(req: Request) {
 }
 
 async function saveBookToDatabase(data: ImportData): Promise<{ bookId: number }> {
-  // 这里应该实现真实的数据库操作
-  // 为了演示，我们模拟插入操作并返回模拟的ID
-  
-  console.log('正在保存书籍到数据库...', {
+  // 1. 创建书籍
+  const bookId = await createBook({
     title: data.bookTitle,
     author: data.author,
-    chapterCount: data.chapters.length
+    category: data.category,
+    desc: data.summary,
+    cover: data.cover
   });
 
-  // 模拟数据库延迟
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  // 2. 批量创建章节
+  // 注意：为了不阻塞太久，可以使用Promise.all并发处理，或者分批处理
+  // 这里章节数量可能较多，为了稳妥起见，我们使用for循环顺序插入，
+  // 或者小批量并发。考虑到SQLite/MySQL连接池限制，不宜过大并发。
 
-  // 在实际项目中，这里应该：
-  // 1. 插入书籍记录到books表
-  // 2. 插入章节记录到chapters表
-  // 3. 返回插入的书籍ID
-  
-  const mockBookId = Math.floor(Math.random() * 10000) + 1000;
-  
+  const chapters = data.chapters;
+  const CHUNK_SIZE = 10;
+
+  for (let i = 0; i < chapters.length; i += CHUNK_SIZE) {
+    const chunk = chapters.slice(i, i + CHUNK_SIZE);
+    await Promise.all(chunk.map(chapter =>
+      createChapter({
+        bookId,
+        title: chapter.title,
+        content: chapter.content,
+        sortOrder: chapter.sortOrder
+      })
+    ));
+  }
+
   return {
-    bookId: mockBookId
+    bookId
   };
 }
